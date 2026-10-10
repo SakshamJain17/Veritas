@@ -1,10 +1,13 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi.responses import FileResponse
 import os
 from typing import Optional
 from app.data import db
 from app.services.extractor import process_uploaded_document
 from app.services.blockchain import anchor_to_ledger
 from app.services.contradiction import scan_for_contradictions
+from app.storage import store_upload
+from pathlib import Path
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -17,8 +20,22 @@ def get_document(doc_id: str):
     doc = next((d for d in db.documents if d["id"] == doc_id), None)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    claims = [c for c in db.claims if c["sourceDocumentId"] == doc_id]
+    issuer = next((i for i in db.issuers if i["id"] == doc.get("issuerId")), None)
+    if issuer:
+        doc["issuerStatus"] = issuer.get("status", "VERIFIED" if issuer.get("isVerified") else "SUSPENDED")
+        doc["issuerStatusReason"] = issuer.get("statusReason")
+    claims = [dict(c, issuerVerified=bool(issuer and issuer.get("status") == "VERIFIED"), issuerCurrentStatus=issuer.get("status") if issuer else "UNKNOWN") for c in db.claims if c["sourceDocumentId"] == doc_id]
     return {"document": doc, "claims": claims}
+
+@router.get("/{doc_id}/file")
+def get_document_file(doc_id: str):
+    doc = next((d for d in db.documents if d["id"] == doc_id), None)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    path = doc.get("storagePath")
+    if not path or not Path(path).is_file():
+        raise HTTPException(status_code=404, detail="Original evidence is not retained or is unavailable")
+    return FileResponse(path, media_type=doc.get("mimeType") or "application/octet-stream", filename=Path(path).name)
 
 @router.post("/upload")
 async def upload_document(
@@ -31,6 +48,8 @@ async def upload_document(
 ):
     max_upload_mb = 10 if os.getenv("VERCEL") == "1" else 25
     content = await file.read(max_upload_mb * 1024 * 1024 + 1) if file else b""
+    if not file or not content:
+        raise HTTPException(status_code=422, detail="A non-empty document file is required")
     if len(content) > max_upload_mb * 1024 * 1024:
         raise HTTPException(status_code=413, detail=f"Document exceeds the {max_upload_mb} MB upload limit")
     if file and content:
@@ -50,8 +69,17 @@ async def upload_document(
         doc_type=documentType,
         language=language,
         raw_bytes=content,
-        issuer_id=issuerId
+        issuer_id=issuerId,
+        mime_type=file.content_type or "application/octet-stream"
     )
+
+    stored_path = store_upload(doc_record["id"], file.filename or "upload.bin", content)
+    doc_record.update({
+        "storagePath": stored_path,
+        "fileAvailable": bool(stored_path),
+        "fileAccess": "PRIVATE_LOCAL" if stored_path else "NOT_RETAINED_SERVERLESS",
+        "fileUrl": f"/api/documents/{doc_record['id']}/file" if stored_path else None,
+    })
 
     doc_record["advisorConsent"] = advisorConsent
     db.documents.append(doc_record)
@@ -72,6 +100,8 @@ async def upload_document(
         "txHash": None,
         "blockNumber": None
     })
+
+    db.persist()
 
     return {"document": doc_record, "claims": claims}
 
@@ -102,5 +132,7 @@ def anchor_document(doc_id: str):
         "txHash": anchor_info["txHash"],
         "blockNumber": anchor_info["blockNumber"]
     })
+
+    db.persist()
 
     return {"document": doc, "anchor": anchor_info}

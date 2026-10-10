@@ -13,6 +13,7 @@ export const INITIAL_ISSUERS: Issuer[] = [
     documentsIssued: 428,
     claimsIssued: 2140,
     revocationCount: 0
+    ,status: 'VERIFIED', demoRecord: true
   },
   {
     id: 'iss-2',
@@ -26,6 +27,7 @@ export const INITIAL_ISSUERS: Issuer[] = [
     documentsIssued: 612,
     claimsIssued: 3672,
     revocationCount: 1
+    ,status: 'VERIFIED', demoRecord: true
   },
   {
     id: 'iss-3',
@@ -39,6 +41,7 @@ export const INITIAL_ISSUERS: Issuer[] = [
     documentsIssued: 244,
     claimsIssued: 976,
     revocationCount: 0
+    ,status: 'VERIFIED', demoRecord: true
   }
 ];
 

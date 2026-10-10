@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
   Lock, 
   QrCode, 
@@ -19,6 +20,7 @@ import QRVerificationModal from '@/components/QRVerificationModal';
 export default function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const docId = resolvedParams.id;
+  const searchParams = useSearchParams();
 
   const [document, setDocument] = useState<Document | null>(null);
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -29,19 +31,23 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const [isAnchoring, setIsAnchoring] = useState(false);
   const [qrModalClaim, setQrModalClaim] = useState<Claim | null>(null);
   const [copiedHash, setCopiedHash] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   useEffect(() => {
     api.latestAdvisor(docId).then(report => setAdvisorTerms(report?.reportJson.terms || [])).catch(() => {});
     api.getDocument(docId).then(data => {
       setDocument(data.document);
       setClaims(data.claims);
-      if (data.claims.length > 0) {
-        setSelectedClaimId(data.claims[0].id);
-        setActivePage(data.claims[0].sourcePage);
+      const requestedClaim = searchParams.get('claim');
+      const initial = data.claims.find(claim=>claim.id===requestedClaim) || data.claims[0];
+      if (initial) {
+        setSelectedClaimId(initial.id);
+        setActivePage(Number(searchParams.get('page')) || initial.sourcePage);
       }
       setLoading(false);
-    });
-  }, [docId]);
+    }).catch(err=>{setError(err instanceof Error?err.message:'Unable to load document');setLoading(false)});
+  }, [docId, searchParams]);
 
   const handleSelectClaim = (claimId: string) => {
     setSelectedClaimId(claimId);
@@ -63,8 +69,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         blockchainAnchor: res.anchor
       }));
       setClaims(updatedClaims);
+      setActionNotice('Anchor recorded successfully.');
     } catch (err) {
-      console.error('Anchoring error:', err);
+      setActionNotice(err instanceof Error ? err.message : 'Anchoring failed; no state was changed.');
     } finally {
       setIsAnchoring(false);
     }
@@ -78,7 +85,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  if (loading || !document) {
+  if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-12 text-slate-400">
         <div className="text-center space-y-2">
@@ -88,12 +95,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       </div>
     );
   }
+  if (error || !document) return <div role="alert" className="m-8 rounded-xl border border-rose-800 bg-rose-950/40 p-5 text-rose-200">{error || 'Document not found'}</div>;
 
   const selectedClaim = claims.find(c => c.id === selectedClaimId);
   const isSessionDemo = api.isSessionDocument(docId);
 
   return (
     <div className="document-detail-page flex-1 flex flex-col bg-[#070b14]">
+      {actionNotice&&<div role="status" className="border-b border-sky-800 bg-sky-950/40 px-4 py-2 text-xs text-sky-200">{actionNotice}</div>}
       {/* Top Bar */}
       <div className="document-detail-toolbar border-b border-slate-800 bg-slate-950/80 px-4 py-2.5 flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center space-x-3">

@@ -34,7 +34,9 @@ def verify_claim_public(claim_id: str):
     document_hash_well_formed = len(document_hash) == 66 and all(c in "0123456789abcdefABCDEF" for c in document_hash[2:])
     document_anchor_valid = bool(doc and doc.get("isAnchored") and document_hash_well_formed)
     claim_anchor_valid = bool(claim["blockchainAnchor"].get("isAnchored") and len(claim_hash) == 66)
-    issuer_valid = bool(issuer and issuer.get("isVerified") and not issuer.get("isRevoked"))
+    issuer_status = issuer.get("status", "VERIFIED" if issuer and issuer.get("isVerified") else "SUSPENDED") if issuer else "UNKNOWN"
+    issuer_valid = issuer_status == "VERIFIED"
+    evidence_available = bool(doc and doc.get("fileAvailable") and claim.get("evidenceMappingStatus", "MAPPED") == "MAPPED")
 
     # Log verification request to audit trail (third-party verifier)
     db.audit_trail.insert(0, {
@@ -66,14 +68,19 @@ def verify_claim_public(claim_id: str):
             "pageNumber": claim["sourcePage"],
             "evidenceRegion": claim["evidenceRegion"],
             "snippetText": claim["rawSnippet"],
-            "privacyNotice": "Demo privacy: the original upload is not retained. This verification page discloses the selected evidence snippet and claim metadata, not the full document."
+            "availability": "AVAILABLE_RESTRICTED" if evidence_available else (doc.get("fileAccess", "NOT_RETAINED") if doc else "UNAVAILABLE"),
+            "originalAvailable": evidence_available,
+            "conflictEvidenceUnavailable": bool(claim.get("hasConflict") and not evidence_available),
+            "privacyNotice": "The complete original is never exposed by public verification. Selected evidence is shown only when retained and permitted." if evidence_available else "Original evidence is unavailable from this public page. The previous comparison result is shown without substituting a fabricated source."
         },
         "issuer": {
             "name": issuer["name"] if issuer else claim["issuerName"],
             "jurisdiction": issuer["jurisdiction"] if issuer else "Official Registrar",
             "address": issuer["address"] if issuer else "0x0000000000000000000000000000000000000000",
-            "isVerified": False,
-            "registryStatus": "DEMO ENTRY ONLY"
+            "isVerified": issuer_valid,
+            "registryStatus": issuer_status,
+            "statusReason": issuer.get("statusReason") if issuer else "Issuer record unavailable",
+            "statusChangedAt": issuer.get("statusChangedAt") if issuer else None
         },
         "integrity": {
             "documentHashValid": False,
@@ -84,9 +91,8 @@ def verify_claim_public(claim_id: str):
         "crossDocumentConsistency": {
             "isConsistent": is_cross_doc_consistent,
             "contradictionCount": len(conflicting_claims),
-            "status": "CONSISTENT" if is_cross_doc_consistent else "CONTRADICTION_FLAGGED"
+            "status": "NOT_CHECKED" if len([c for c in db.claims if c["id"] != claim_id and c["subject"].lower() == claim["subject"].lower() and c["predicate"].lower() == claim["predicate"].lower()]) == 0 else ("CONSISTENT" if is_cross_doc_consistent else "CONTRADICTION_FLAGGED")
         },
         "timestamp": now_iso
     }
-
 

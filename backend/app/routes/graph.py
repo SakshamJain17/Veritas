@@ -29,7 +29,9 @@ def get_evidence_graph():
                 "id": iss["id"],
                 "jurisdiction": iss["jurisdiction"],
                 "address": iss["address"],
-                "isVerified": iss["isVerified"]
+                "status": iss.get("status", "VERIFIED" if iss.get("isVerified") else "SUSPENDED"),
+                "statusReason": iss.get("statusReason"),
+                "statusChangedAt": iss.get("statusChangedAt")
             }
         )
 
@@ -48,15 +50,18 @@ def get_evidence_graph():
             }
         )
         # Edge from Document to Issuer
-        edges.append({
+        if f"issuer-{doc['issuerId']}" in node_ids:
+            edges.append({
             "id": f"e-doc-iss-{doc['id']}",
             "source": doc_node_id,
             "target": f"issuer-{doc['issuerId']}",
             "label": "issuedBy"
-        })
+            })
 
     # Add Claims, Entities, Evidence Regions & Anchors
     for c in db.claims:
+        if not any(d["id"] == c.get("sourceDocumentId") for d in db.documents):
+            continue
         claim_node_id = f"claim-{c['id']}"
         add_node(
             claim_node_id,
@@ -95,37 +100,26 @@ def get_evidence_graph():
             "label": "assertsRegarding"
         })
 
-        # Add Evidence Region node
+        # Add evidence only when the extractor produced a real source mapping.
         evidence_id = f"ev-{c['id']}"
-        add_node(
-            evidence_id,
-            f"Page {c['sourcePage']} Region",
-            "EVIDENCE",
-            {
-                "page": c["sourcePage"],
-                "coordinates": c["evidenceRegion"],
-                "snippet": c["rawSnippet"]
-            }
-        )
-        edges.append({
-            "id": f"e-clm-ev-{c['id']}",
-            "source": claim_node_id,
-            "target": evidence_id,
-            "label": "supportedBy"
-        })
+        evidence_available = bool(c.get("rawSnippet") and c.get("evidenceRegion") and c.get("evidenceMappingStatus", "MAPPED") == "MAPPED")
+        add_node(evidence_id, f"Page {c.get('sourcePage', '?')} evidence" if evidence_available else "Evidence unavailable", "EVIDENCE", {"claimId": c["id"], "documentId": c["sourceDocumentId"], "documentTitle": c["sourceDocumentName"], "page": c.get("sourcePage"), "coordinates": c.get("evidenceRegion") if evidence_available else None, "snippet": c.get("rawSnippet") if evidence_available else None, "available": evidence_available})
+        edges.append({"id": f"e-clm-ev-{c['id']}", "source": claim_node_id, "target": evidence_id, "label": "supportedBy" if evidence_available else "evidenceUnavailable"})
 
         # Add Blockchain Anchor node if anchored
         if c["blockchainAnchor"]["isAnchored"]:
             anchor_id = f"bc-{c['id']}"
             add_node(
                 anchor_id,
-                f"Block #{c['blockchainAnchor']['blockNumber']}",
+                "Simulated anchor" if "Simulated" in c["blockchainAnchor"].get("network", "") else f"Block #{c['blockchainAnchor'].get('blockNumber')}",
                 "BLOCKCHAIN RECORD",
                 {
                     "txHash": c["blockchainAnchor"]["txHash"],
                     "block": c["blockchainAnchor"]["blockNumber"],
                     "network": c["blockchainAnchor"]["network"],
-                    "timestamp": c["blockchainAnchor"]["timestamp"]
+                    "timestamp": c["blockchainAnchor"]["timestamp"],
+                    "mode": "SIMULATED" if "Simulated" in c["blockchainAnchor"].get("network", "") else "NETWORK_TRANSACTION",
+                    "claimId": c["id"]
                 }
             )
             edges.append({

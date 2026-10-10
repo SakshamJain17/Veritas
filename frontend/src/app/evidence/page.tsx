@@ -36,6 +36,8 @@ export default function EvidenceGraphPage() {
   const [zoom, setZoom] = useState(1);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(1100);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const element = canvasRef.current;
@@ -69,7 +71,7 @@ export default function EvidenceGraphPage() {
       if (positioned.length > 0) {
         setSelectedNode(positioned[0]);
       }
-    });
+    }).catch(err => setError(err instanceof Error ? err.message : 'Unable to load evidence graph')).finally(()=>setLoading(false));
   }, []);
 
   const getNodeColor = (type: string) => {
@@ -108,7 +110,7 @@ export default function EvidenceGraphPage() {
 
         {/* Node Filters */}
         <div className="evidence-filters flex flex-wrap items-center gap-1.5 text-xs">
-          {['ALL', 'DOCUMENT', 'CLAIM', 'EVIDENCE', 'ISSUER', 'BLOCKCHAIN RECORD'].map(t => (
+          {['ALL', 'DOCUMENT', 'CLAIM', 'EVIDENCE', 'ENTITY', 'ISSUER', 'BLOCKCHAIN RECORD'].map(t => (
             <button
               key={t}
               onClick={() => setFilterType(t)}
@@ -156,6 +158,9 @@ export default function EvidenceGraphPage() {
       <div className="evidence-layout flex-1 flex flex-col lg:flex-row">
         {/* GRAPH CANVAS */}
         <div ref={canvasRef} className="evidence-canvas flex-1 relative overflow-auto bg-[#04070f] tech-grid p-4">
+          {loading && <div className="p-8 text-sm text-slate-400">Loading evidence graph…</div>}
+          {error && <div role="alert" className="m-4 rounded-xl border border-rose-800 bg-rose-950/40 p-4 text-sm text-rose-200">{error}</div>}
+          {!loading && !error && filteredNodes.length === 0 && <div className="p-8 text-sm text-slate-400">No records match this node filter.</div>}
           <p className="evidence-pan-hint">Swipe the graph to explore all connections. Select a node to inspect it.</p>
           <div className="relative" style={{ width: 1100 * graphScale, height: graphHeight * graphScale }}>
           <svg
@@ -319,6 +324,14 @@ export default function EvidenceGraphPage() {
                   </Link>
                 </div>
               )}
+              {selectedNode.type === 'EVIDENCE' && (
+                <div className="space-y-2">
+                  {selectedNode.metadata.available ? <Link href={`/documents/${selectedNode.metadata.documentId}?page=${selectedNode.metadata.page}&claim=${selectedNode.metadata.claimId}`} className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 py-2.5 text-xs font-semibold text-white"><span>Open original source region</span><ExternalLink className="h-3.5 w-3.5"/></Link> : <p className="rounded-xl border border-amber-800 bg-amber-950/40 p-3 text-xs text-amber-200">Evidence is unavailable; no replacement snippet or coordinates were generated.</p>}
+                </div>
+              )}
+              {selectedNode.type === 'ISSUER' && <Link href={`/issuers?issuer=${selectedNode.metadata.id}`} className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-xs font-semibold text-white">Open authority registry<ExternalLink className="h-3.5 w-3.5"/></Link>}
+              {selectedNode.type === 'ENTITY' && <div className="rounded-xl border border-slate-800 bg-slate-900 p-3 text-xs text-slate-300"><p className="font-semibold">Connected records</p><ul className="mt-2 space-y-1">{edges.filter(e=>e.source===selectedNode.id||e.target===selectedNode.id).map(edge=>{const other=nodes.find(n=>n.id===(edge.source===selectedNode.id?edge.target:edge.source));return <li key={edge.id}>{edge.label}: {other?.label||'Missing record'}</li>})}</ul></div>}
+              {selectedNode.type === 'BLOCKCHAIN RECORD' && <p className="rounded-xl border border-yellow-800 bg-yellow-950/30 p-3 text-xs text-yellow-200">Mode: <strong>{String(selectedNode.metadata.mode||'UNKNOWN')}</strong>. A simulated anchor is a demo commitment and is not independently verified on a public network.</p>}
             </div>
           ) : (
             <div className="text-center text-slate-500 py-12 space-y-2">

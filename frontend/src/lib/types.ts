@@ -38,6 +38,11 @@ export interface Claim {
   blockchainAnchor: BlockchainAnchor;
   hasConflict: boolean;
   conflictId?: string | null;
+  fieldName?: string;
+  normalizedValue?: string;
+  extractionMethod?: string;
+  evidenceMappingStatus?: 'MAPPED' | 'UNAVAILABLE';
+  reviewStatus?: string;
 }
 
 export interface Document {
@@ -49,7 +54,7 @@ export interface Document {
   fileSizeKb: number;
   hashSha256: string;
   uploadedAt: string;
-  status: 'INGESTED' | 'EXTRACTED' | 'ANCHORED' | 'CONFLICT_DETECTED';
+  status: 'INGESTED' | 'EXTRACTED' | 'PARTIAL' | 'EXTRACTION_FAILED' | 'ANCHORED' | 'CONFLICT_DETECTED';
   claimsCount: number;
   issuerId: string;
   issuerName: string;
@@ -59,6 +64,11 @@ export interface Document {
   thumbnailUrl?: string;
   previewPages: string[];
   advisorConsent?: boolean;
+  mimeType?: string | null;
+  fileAvailable?: boolean;
+  fileAccess?: string;
+  fileUrl?: string | null;
+  extractionSummary?: { pageCount: number; textExtractedPages: number; ocrPages: number; sourceTextLength: number; claimsExtracted: number; claimsMapped: number; ambiguousFields: number; failures: string[] } | null;
 }
 
 export interface ContradictionValue {
@@ -74,12 +84,16 @@ export interface Contradiction {
   field: string;
   entitySubject: string;
   valuesFound: ContradictionValue[];
-  status: 'REQUIRES HUMAN REVIEW' | 'RESOLVED' | 'DISMISSED';
+  status: 'CONFLICT_DETECTED' | 'REQUIRES_HUMAN_REVIEW' | 'UNRESOLVED' | 'DISMISSED' | 'RESOLVED_AFTER_REVIEW' | 'INSUFFICIENT_EVIDENCE' | 'REQUIRES HUMAN REVIEW' | 'RESOLVED';
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
   explanation: string;
   detectedAt: string;
   reviewAction?: string | null;
   reviewerNotes?: string | null;
+  comparisonBasis?: string;
+  uncertainties?: string[];
+  reviewedAt?: string | null;
+  sources?: { claimId: string; documentId: string; documentTitle: string; value: string; page?: number; snippet?: string; evidenceAvailable: boolean; evidenceRegion?: BoundingRegion }[];
 }
 
 export interface Issuer {
@@ -94,6 +108,12 @@ export interface Issuer {
   documentsIssued: number;
   claimsIssued: number;
   revocationCount: number;
+  status: 'PENDING_VERIFICATION' | 'VERIFIED' | 'SUSPENDED' | 'REVOKED';
+  demoRecord?: boolean;
+  statusChangedAt?: string | null;
+  statusReason?: string | null;
+  revokedAt?: string | null;
+  statusHistory?: { from: string | null; to: string; action: string; reason: string; actor: string; timestamp: string }[];
 }
 
 export interface AuditEvent {
@@ -126,12 +146,18 @@ export interface PublicVerificationPackage {
     evidenceRegion: BoundingRegion;
     snippetText: string;
     privacyNotice: string;
+    availability?: string;
+    originalAvailable?: boolean;
+    conflictEvidenceUnavailable?: boolean;
   };
   issuer: {
     name: string;
     jurisdiction: string;
     address: string;
     isVerified: boolean;
+    registryStatus?: string;
+    statusReason?: string;
+    statusChangedAt?: string;
   };
   integrity: {
     documentHashValid: boolean;

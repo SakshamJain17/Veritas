@@ -40,6 +40,8 @@ def get_claim(claim_id: str):
 
     # Include source document and related claims
     doc = next((d for d in db.documents if d["id"] == claim["sourceDocumentId"]), None)
+    issuer = next((i for i in db.issuers if i["id"] == claim.get("issuerId")), None)
+    claim = dict(claim, issuerVerified=bool(issuer and issuer.get("status") == "VERIFIED"), issuerCurrentStatus=issuer.get("status") if issuer else "UNKNOWN", issuerStatusReason=issuer.get("statusReason") if issuer else "Issuer unavailable")
     related_claims = [
         c for c in db.claims
         if c["id"] != claim_id and (

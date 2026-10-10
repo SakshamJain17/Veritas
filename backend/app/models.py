@@ -90,6 +90,12 @@ class Issuer(BaseModel):
     documentsIssued: int
     claimsIssued: int
     revocationCount: int = 0
+    status: str = "PENDING_VERIFICATION"
+    demoRecord: bool = False
+    statusChangedAt: Optional[str] = None
+    statusReason: Optional[str] = None
+    revokedAt: Optional[str] = None
+    statusHistory: List[Dict[str, Any]] = []
 
 class AuditEvent(BaseModel):
     id: str

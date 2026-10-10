@@ -28,7 +28,7 @@ async def public_demo_guard(request: Request, call_next):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3010", "http://127.0.0.1:3010"],
+    allow_origins=["http://localhost:3000", "http://localhost:3010", "http://127.0.0.1:3010", "http://localhost:3020", "http://127.0.0.1:3020"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

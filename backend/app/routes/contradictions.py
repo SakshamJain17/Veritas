@@ -18,9 +18,13 @@ def list_contradictions():
 
 @router.post("/{conflict_id}/review")
 def review_contradiction(conflict_id: str, payload: ReviewPayload):
+    if payload.action not in {"DISMISS", "RESOLVE", "FLAG_INCONSISTENCY"}:
+        raise HTTPException(status_code=422, detail="Action must be DISMISS, RESOLVE, or FLAG_INCONSISTENCY")
+    if not payload.notes or len(payload.notes.strip()) < 3:
+        raise HTTPException(status_code=422, detail="Review notes are required")
     updated = resolve_contradiction(conflict_id, payload.action, payload.notes)
     if not updated:
-        raise HTTPException(status_code=404, detail="Contradiction not found")
+        raise HTTPException(status_code=404, detail="Contradiction not found or invalid review")
 
     now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
@@ -34,5 +38,6 @@ def review_contradiction(conflict_id: str, payload: ReviewPayload):
         "txHash": None,
         "blockNumber": None
     })
+    db.persist()
 
     return updated

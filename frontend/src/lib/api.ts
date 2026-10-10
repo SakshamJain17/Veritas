@@ -1,7 +1,9 @@
 import { Document, Claim, Contradiction, Issuer, AuditEvent, PublicVerificationPackage, EvidenceGraphData, BlockchainAnchor, AnalyticsData, SourceCheck, AdvisorReport } from './types';
 import { INITIAL_DOCUMENTS, INITIAL_CLAIMS, INITIAL_CONTRADICTIONS, INITIAL_ISSUERS } from './mockData';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8000');
+// Use same-origin requests in the browser. Next.js proxies /api locally and
+// Vercel routes /api to the backend service in production.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 const SESSION_DOCUMENT_PREFIX = 'veritas:demo-document:';
 
 function readSessionDocument(id: string): { document: Document; claims: Claim[] } | null {
@@ -102,13 +104,7 @@ export const api = {
   async getDocument(id: string): Promise<{ document: Document; claims: Claim[] }> {
     const sessionDocument = readSessionDocument(id);
     if (sessionDocument) return sessionDocument;
-    const fallbackDoc = INITIAL_DOCUMENTS.find(d => d.id === id) || INITIAL_DOCUMENTS[0];
-    const fallbackClaims = INITIAL_CLAIMS.filter(c => c.sourceDocumentId === fallbackDoc.id);
-    return safeFetch<{ document: Document; claims: Claim[] }>(
-      `/api/documents/${id}`,
-      {},
-      { document: fallbackDoc, claims: fallbackClaims }
-    );
+    return safeFetch<{ document: Document; claims: Claim[] }>(`/api/documents/${id}`);
   },
 
   async uploadDocument(formData: FormData): Promise<{ document: Document; claims: Claim[] }> {
@@ -119,6 +115,13 @@ export const api = {
         body: formData
       }
     );
+    const selected = formData.get('file');
+    if (selected instanceof File) {
+      result.document.fileUrl = URL.createObjectURL(selected);
+      result.document.fileAvailable = true;
+      result.document.fileAccess = 'BROWSER_SESSION';
+      result.document.mimeType = selected.type;
+    }
     saveSessionDocument(result);
     return result;
   },
@@ -164,16 +167,7 @@ export const api = {
         conflict: null,
       };
     }
-    const fallbackClaim = INITIAL_CLAIMS.find(c => c.id === id) || INITIAL_CLAIMS[0];
-    const fallbackDoc = INITIAL_DOCUMENTS.find(d => d.id === fallbackClaim.sourceDocumentId) || INITIAL_DOCUMENTS[0];
-    const fallbackRelated = INITIAL_CLAIMS.filter(c => c.id !== fallbackClaim.id);
-    const fallbackConflict = fallbackClaim.hasConflict ? INITIAL_CONTRADICTIONS[0] : null;
-
-    return safeFetch<{ claim: Claim; document: Document; relatedClaims: Claim[]; conflict?: Contradiction | null }>(
-      `/api/claims/${id}`,
-      {},
-      { claim: fallbackClaim, document: fallbackDoc, relatedClaims: fallbackRelated, conflict: fallbackConflict }
-    );
+    return safeFetch<{ claim: Claim; document: Document; relatedClaims: Claim[]; conflict?: Contradiction | null }>(`/api/claims/${id}`);
   },
 
   async getSourceCheck(id: string): Promise<SourceCheck> {
@@ -258,13 +252,19 @@ export const api = {
         pageNumber: claim.sourcePage,
         evidenceRegion: claim.evidenceRegion,
         snippetText: claim.rawSnippet,
-        privacyNotice: 'Demo privacy: the original upload is not retained. This page shows a selected evidence snippet and claim metadata, not the full document.'
+        availability: doc.fileAccess || 'NOT_RETAINED',
+        originalAvailable: Boolean(doc.fileAvailable && claim.evidenceMappingStatus !== 'UNAVAILABLE'),
+        conflictEvidenceUnavailable: Boolean(claim.hasConflict && (!doc.fileAvailable || claim.evidenceMappingStatus === 'UNAVAILABLE')),
+        privacyNotice: doc.fileAvailable ? 'The full source stays restricted to the current browser session; public verification shows only the selected evidence.' : 'Original evidence is unavailable. No fabricated source is substituted.'
       },
       issuer: {
         name: issuer.name,
         jurisdiction: issuer.jurisdiction,
         address: issuer.address,
-        isVerified: false
+        isVerified: issuer.status === 'VERIFIED',
+        registryStatus: issuer.status,
+        statusReason: issuer.statusReason || undefined,
+        statusChangedAt: issuer.statusChangedAt || undefined
       },
       integrity: {
         documentHashValid: false,
@@ -302,8 +302,8 @@ export const api = {
     });
   },
 
-  async toggleVerifyIssuer(id: string): Promise<Issuer> {
-    return safeFetch<Issuer>(`/api/issuers/${id}/toggle-verify`, { method: 'POST' });
+  async transitionIssuer(id: string, action: 'VERIFY' | 'SUSPEND' | 'REINSTATE' | 'REVOKE', reason: string): Promise<Issuer> {
+    return safeFetch<Issuer>(`/api/issuers/${id}/transition`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, reason }) });
   },
 
   // Audit

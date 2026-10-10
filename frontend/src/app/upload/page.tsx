@@ -12,6 +12,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Document } from '@/lib/types';
 
 const PIPELINE_STEPS = [
   { step: 1, name: 'Document ingestion', description: 'Parsing multi-page scanned PDF/image format' },
@@ -43,6 +44,7 @@ export default function UploadPage() {
   const [completedDocId, setCompletedDocId] = useState<string | null>(null);
   const [completedClaimsCount, setCompletedClaimsCount] = useState(0);
   const [detectedContradiction, setDetectedContradiction] = useState(false);
+  const [completedDocument, setCompletedDocument] = useState<Document | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Quick preset loader
@@ -65,8 +67,8 @@ export default function UploadPage() {
   const handleStartUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title) return;
-    if (isPublicDemo && !selectedFile) {
-      setUploadError('Choose a PDF or image to run the judge demo.');
+    if (!selectedFile) {
+      setUploadError('Choose a PDF or image to analyze.');
       return;
     }
     setUploadError(null);
@@ -83,14 +85,6 @@ export default function UploadPage() {
     setIsProcessing(true);
     setCurrentStep(1);
 
-    const isDisputed = title.toLowerCase().includes('disputed') || title.toLowerCase().includes('mutation');
-
-    // Run realistic step-by-step pipeline
-    for (let s = 1; s <= 10; s++) {
-      setCurrentStep(s);
-      await new Promise(r => setTimeout(r, 450)); // realistic step cadence
-    }
-
     try {
       const formData = new FormData();
       formData.append('title', title);
@@ -103,12 +97,11 @@ export default function UploadPage() {
       }
 
       const res = await api.uploadDocument(formData);
+      setCurrentStep(10);
       setCompletedDocId(res.document.id);
+      setCompletedDocument(res.document);
       setCompletedClaimsCount(res.claims.length);
-
-      if (isDisputed) {
-        setDetectedContradiction(true);
-      }
+      setDetectedContradiction(res.claims.some(claim => claim.hasConflict));
     } catch (err) {
       console.error('Upload processing error:', err);
       setUploadError(err instanceof Error ? err.message : 'The document could not be processed. Check that the API is running and try again.');
@@ -122,7 +115,7 @@ export default function UploadPage() {
       {/* Header */}
       <div>
         {isPublicDemo && <div className="mb-5 rounded-xl border border-sky-700/60 bg-sky-950/40 p-4 text-sm text-sky-100">
-          <strong>Judge demo mode:</strong> choose a non-sensitive PDF or image. VERITAS validates and hashes the file, discards its bytes, and keeps the generated demo result only in this browser session. Claim extraction and evidence regions are deterministic prototype outputs, not OCR results.
+          <strong>Hosted processing:</strong> choose a non-sensitive PDF or image. VERITAS extracts actual source text when the required engine is available and keeps the original only in this browser session because durable hosted storage is not configured.
         </div>}
         <div className="flex items-center space-x-2 text-xs font-mono text-sky-400 mb-1">
           <span>DOCUMENT ANALYSIS WORKFLOW</span>
@@ -300,7 +293,7 @@ export default function UploadPage() {
           {/* Submit button */}
           <button
             type="submit"
-            disabled={!title}
+            disabled={!title || !selectedFile}
             className="w-full flex items-center justify-center space-x-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 py-3.5 text-sm font-semibold text-white shadow-lg shadow-sky-600/20 transition-all active:scale-[0.98]"
           >
             <span>Analyze Document</span>
@@ -315,7 +308,7 @@ export default function UploadPage() {
           <div className="flex items-center justify-between pb-4 border-b border-slate-800">
             <div className="space-y-1">
               <span className="text-xs font-mono uppercase text-sky-400 font-bold">
-                STAGE {currentStep} OF 10 IN PROGRESS
+                PROCESSING SOURCE FILE
               </span>
               <h3 className="text-lg font-bold text-white tracking-tight">
                 Processing {title}
@@ -330,11 +323,11 @@ export default function UploadPage() {
           <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-sky-500 to-emerald-400 transition-all duration-300"
-              style={{ width: `${(currentStep / 10) * 100}%` }}
+              style={{ width: '65%' }}
             />
           </div>
 
-          <p className="text-sm text-slate-300">{PIPELINE_STEPS[currentStep - 1]?.name}</p>
+          <p className="text-sm text-slate-300">Reading source text, mapping evidence and generating the SHA-256 fingerprint. Results will report unavailable stages explicitly.</p>
           <details className="text-xs text-slate-400">
             <summary className="cursor-pointer">View all processing stages</summary>
             <ol className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -354,7 +347,7 @@ export default function UploadPage() {
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
                 <span className="text-xs font-mono font-bold uppercase text-emerald-400">
-                  PIPELINE COMPLETE
+                  PROCESSING RESULT: {completedDocument?.status || 'COMPLETE'}
                 </span>
                 {detectedContradiction && (
                   <span className="rounded bg-rose-950 px-2 py-0.5 text-[10px] font-mono text-rose-300 border border-rose-800">
@@ -363,13 +356,15 @@ export default function UploadPage() {
                 )}
               </div>
               <h2 className="text-xl font-bold text-white tracking-tight">
-                {title} Successfully Ingested
+                {title} processed
               </h2>
               <p className="text-xs text-slate-300">
-                Generated {completedClaimsCount} structured claims with bounding region evidence mapping and SHA-256 fingerprinting.
+                {completedClaimsCount} claims extracted; {completedDocument?.extractionSummary?.claimsMapped ?? 0} mapped to source evidence. Fingerprint computed: {completedDocument?.hashSha256 ? 'yes' : 'no'}.
               </p>
             </div>
           </div>
+
+          {completedDocument?.extractionSummary && <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">{[['Pages',completedDocument.extractionSummary.pageCount],['Text pages',completedDocument.extractionSummary.textExtractedPages],['OCR pages',completedDocument.extractionSummary.ocrPages],['Needs review',completedDocument.extractionSummary.ambiguousFields]].map(([label,value])=><div key={String(label)} className="rounded-lg border border-slate-800 bg-slate-950 p-3"><p className="text-slate-500">{label}</p><p className="text-lg font-bold text-white">{value}</p></div>)}{completedDocument.extractionSummary.failures.length>0&&<div role="alert" className="col-span-full rounded-lg border border-amber-800 bg-amber-950/30 p-3 text-amber-200">Incomplete operations: {completedDocument.extractionSummary.failures.join('; ')}</div>}</div>}
 
           {detectedContradiction && (
             <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs text-slate-300 space-y-1">

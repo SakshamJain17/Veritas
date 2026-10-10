@@ -56,7 +56,11 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const activeConflict = contradictions.find(c => c.status === 'REQUIRES HUMAN REVIEW');
+  const activeConflict = contradictions.find(c => c.status === 'REQUIRES HUMAN REVIEW' || c.status === 'REQUIRES_HUMAN_REVIEW' || c.status === 'UNRESOLVED');
+  const verifiedClaims = claims.filter(claim=>claim.verificationStatus==='VERIFIED').length;
+  const conflictedClaims = claims.filter(claim=>claim.hasConflict).length;
+  const pendingClaims = claims.filter(claim=>claim.verificationStatus==='PENDING_REVIEW').length;
+  const anchoredClaims = claims.filter(claim=>claim.blockchainAnchor.isAnchored).length;
 
   return (
     <div className="flex-1 bg-[#070b14] py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-8">
@@ -105,61 +109,61 @@ export default function DashboardPage() {
       {/* TOP KPI CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1 */}
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2">
+        <Link href="/documents" className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2 hover:border-sky-700 focus-visible:ring-2 focus-visible:ring-sky-500">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-medium uppercase font-mono">Documents Processed</span>
             <FileText className="h-4 w-4 text-sky-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-mono">
-            {1284 + documents.length - 5}
+            {documents.length}
           </div>
           <div className="flex items-center space-x-1 text-[11px] text-emerald-400">
             <TrendingUp className="h-3.5 w-3.5" />
-            <span>+18.4% this month</span>
+            <span>Current repository records</span>
           </div>
-        </div>
+        </Link>
 
         {/* KPI 2 */}
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2">
+        <Link href="/claims?status=VERIFIED" className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2 hover:border-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-medium uppercase font-mono">Verified Claims</span>
             <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-mono">
-            {8421 + claims.length - 16}
+            {verifiedClaims}
           </div>
           <div className="text-[11px] text-slate-400">
             Subject-Predicate-Object triples
           </div>
-        </div>
+        </Link>
 
         {/* KPI 3 */}
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2">
+        <Link href="/claims?has_conflict=true" className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2 hover:border-rose-700 focus-visible:ring-2 focus-visible:ring-rose-500">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-medium uppercase font-mono">Claims With Conflicts</span>
             <AlertTriangle className="h-4 w-4 text-rose-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-bold text-rose-400 tracking-tight font-mono">
-            37
+            {conflictedClaims}
           </div>
           <div className="text-[11px] text-rose-300/80 font-mono">
             Requires human review
           </div>
-        </div>
+        </Link>
 
         {/* KPI 4 */}
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2">
+        <Link href="/claims?status=PENDING_REVIEW" className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2 hover:border-amber-700 focus-visible:ring-2 focus-visible:ring-amber-500">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-medium uppercase font-mono">Pending Verification</span>
             <Clock className="h-4 w-4 text-amber-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-mono">
-            126
+            {pendingClaims}
           </div>
           <div className="text-[11px] text-slate-400">
             Awaiting issuer counter-signature
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Additional metrics stay available without crowding the overview. */}
@@ -169,7 +173,7 @@ export default function DashboardPage() {
         <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[11px] font-mono text-slate-400 uppercase">Document Cryptographic Integrity</span>
-            <p className="text-xl font-bold text-white font-mono">98.7%</p>
+            <p className="text-xl font-bold text-white font-mono">{documents.length ? Math.round(100*documents.filter(doc=>Boolean(doc.hashSha256)).length/documents.length) : 0}%</p>
           </div>
           <div className="h-10 w-10 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
             <ShieldCheck className="h-5 w-5" />
@@ -179,7 +183,7 @@ export default function DashboardPage() {
         <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[11px] font-mono text-slate-400 uppercase">Issuer Verification Rate</span>
-            <p className="text-xl font-bold text-white font-mono">94.2%</p>
+            <p className="text-xl font-bold text-white font-mono">See authority registry</p>
           </div>
           <div className="h-10 w-10 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
             <Building2 className="h-5 w-5" />
@@ -189,7 +193,7 @@ export default function DashboardPage() {
         <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[11px] font-mono text-slate-400 uppercase">Smart Contract Anchoring</span>
-            <p className="text-xl font-bold text-emerald-400 font-mono">ACTIVE (EVM)</p>
+            <p className="text-xl font-bold text-emerald-400 font-mono">{anchoredClaims}/{claims.length} simulated</p>
           </div>
           <div className="h-10 w-10 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
             <Lock className="h-5 w-5" />

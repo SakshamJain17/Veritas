@@ -1,269 +1,34 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { 
-  Building2, 
-  ShieldCheck, 
-  Plus, 
-  Check, 
-  X, 
-  AlertTriangle, 
-  Copy, 
-  Lock, 
-  Globe,
-  FileText,
-  CheckCircle2
-} from 'lucide-react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { AlertTriangle, Building2, Loader2, Plus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Issuer } from '@/lib/types';
 
+type Action = 'VERIFY' | 'SUSPEND' | 'REINSTATE' | 'REVOKE';
+const tones: Record<Issuer['status'], string> = { PENDING_VERIFICATION:'border-amber-700 bg-amber-950/30 text-amber-300', VERIFIED:'border-emerald-700 bg-emerald-950/30 text-emerald-300', SUSPENDED:'border-orange-700 bg-orange-950/30 text-orange-300', REVOKED:'border-rose-700 bg-rose-950/30 text-rose-300' };
+
 export default function IssuersPage() {
-  const [issuers, setIssuers] = useState<Issuer[]>([]);
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newJurisdiction, setNewJurisdiction] = useState('');
-  const [newAddress, setNewAddress] = useState('');
-  const [copiedAddr, setCopiedAddr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadIssuers = async () => {
-    try {
-      const list = await api.getIssuers();
-      setIssuers(list);
-    } catch (err) {
-      console.error('Failed to load issuers:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    api.getIssuers().then(list => {
-      if (!cancelled) setIssuers(list);
-    }).catch(err => console.error('Failed to load issuers:', err)).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, []);
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName || !newJurisdiction) return;
-
-    try {
-      await api.registerIssuer({
-        name: newName,
-        jurisdiction: newJurisdiction,
-        address: newAddress || `0x${Math.random().toString(16).substring(2, 42)}`
-      });
-      setIsRegisterModalOpen(false);
-      setNewName('');
-      setNewJurisdiction('');
-      setNewAddress('');
-      loadIssuers();
-    } catch (err) {
-      console.error('Error registering issuer:', err);
-    }
-  };
-
-  const handleToggleVerify = async (id: string) => {
-    try {
-      await api.toggleVerifyIssuer(id);
-      loadIssuers();
-    } catch (err) {
-      console.error('Error toggling issuer:', err);
-    }
-  };
-
-  const copyAddress = (addr: string) => {
-    navigator.clipboard.writeText(addr);
-    setCopiedAddr(addr);
-    setTimeout(() => setCopiedAddr(null), 2000);
-  };
-
-  return (
-    <div className="flex-1 bg-[#070b14] py-8 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-        <div>
-          <div className="flex items-center space-x-2 text-xs font-mono text-sky-400 mb-1">
-            <span>PUBLIC AUTHORITY REGISTRY</span>
-            <span>•</span>
-            <span className="text-emerald-400">IssuerRegistry.sol</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            Verified Public Authorities
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Certified government departments, sub-registrars, municipal corporations, and educational institutions.
-          </p>
-        </div>
-
-        <button
-          onClick={() => setIsRegisterModalOpen(true)}
-          className="flex items-center space-x-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 px-4 py-2 text-xs font-semibold text-white shadow-md transition-all active:scale-[0.98]"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Register New Issuer</span>
-        </button>
-      </div>
-
-      {/* Issuers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {issuers.map((issuer) => {
-          const isVerified = issuer.isVerified;
-
-          return (
-            <div
-              key={issuer.id}
-              className={`p-6 rounded-2xl border transition-all space-y-5 flex flex-col justify-between ${
-                isVerified
-                  ? 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                  : 'bg-rose-950/20 border-rose-900/40 hover:border-rose-700'
-              }`}
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="p-3 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                    <Building2 className="h-6 w-6" />
-                  </div>
-
-                  <span className={`inline-flex items-center space-x-1 rounded-full px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase border ${
-                    isVerified
-                      ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                      : 'bg-rose-950 text-rose-300 border-rose-800'
-                  }`}>
-                    {isVerified ? <CheckCircle2 className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                    <span>{isVerified ? 'VERIFIED' : 'SUSPENDED'}</span>
-                  </span>
-                </div>
-
-                <div>
-                  <h3 className="text-base font-bold text-white tracking-tight">
-                    {issuer.name}
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    {issuer.jurisdiction}
-                  </p>
-                </div>
-
-                {/* Public key / address */}
-                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
-                  <span className="text-[10px] uppercase text-slate-500 block">EVM Authority Address</span>
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span className="truncate max-w-[190px]">{issuer.address}</span>
-                    <button
-                      onClick={() => copyAddress(issuer.address)}
-                      className="p-1 hover:text-white"
-                      title="Copy Address"
-                    >
-                      {copiedAddr === issuer.address ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats & Actions */}
-              <div className="space-y-3 pt-3 border-t border-slate-800/80">
-                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                  <div>
-                    <span className="text-slate-500 text-[10px]">DOCUMENTS</span>
-                    <p className="font-bold text-white text-sm">{issuer.documentsIssued}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px]">CLAIMS ATTESTED</span>
-                    <p className="font-bold text-sky-400 text-sm">{issuer.claimsIssued}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2 pt-1">
-                  <button
-                    onClick={() => handleToggleVerify(issuer.id)}
-                    className={`w-full py-2 rounded-lg text-xs font-semibold transition-colors ${
-                      isVerified
-                        ? 'bg-slate-800 hover:bg-rose-950/80 hover:text-rose-300 text-slate-300'
-                        : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                    }`}
-                  >
-                    {isVerified ? 'Revoke / Suspend Authority' : 'Re-Certify Authority'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Register New Issuer Modal */}
-      {isRegisterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-[#0d1527] p-6 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-lg font-bold text-white">Register Verified Authority</h3>
-              <button
-                onClick={() => setIsRegisterModalOpen(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleRegister} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="font-mono uppercase text-slate-400">Authority Name</label>
-                <input
-                  type="text"
-                  required
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="e.g. State Land Revenue Bureau"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-mono uppercase text-slate-400">Jurisdiction Division</label>
-                <input
-                  type="text"
-                  required
-                  value={newJurisdiction}
-                  onChange={(e) => setNewJurisdiction(e.target.value)}
-                  placeholder="e.g. Northern Regional Cadastral Council"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-mono uppercase text-slate-400">Public Key / EVM Address</label>
-                <input
-                  type="text"
-                  value={newAddress}
-                  onChange={(e) => setNewAddress(e.target.value)}
-                  placeholder="0x... (leave empty for auto-generated)"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 font-mono text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsRegisterModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold"
-                >
-                  Register Issuer
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  const [issuers,setIssuers]=useState<Issuer[]>([]); const [loading,setLoading]=useState(true);
+  const [notice,setNotice]=useState<{kind:'success'|'error';text:string}|null>(null);
+  const [pending,setPending]=useState<string|null>(null); const [dialog,setDialog]=useState<{issuer:Issuer;action:Action}|null>(null); const [reason,setReason]=useState('');
+  const [register,setRegister]=useState(false); const [form,setForm]=useState({name:'',jurisdiction:'',address:''});
+  const load=useCallback(async()=>{setLoading(true);try{setIssuers(await api.getIssuers())}catch(e){setNotice({kind:'error',text:e instanceof Error?e.message:'Unable to load authorities'})}finally{setLoading(false)}},[]);
+  useEffect(()=>{let active=true;api.getIssuers().then(items=>{if(active)setIssuers(items)}).catch(e=>{if(active)setNotice({kind:'error',text:e instanceof Error?e.message:'Unable to load authorities'})}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[]);
+  const actions=(issuer:Issuer):Action[]=>issuer.status==='PENDING_VERIFICATION'?['VERIFY','REVOKE']:issuer.status==='VERIFIED'?['SUSPEND','REVOKE']:issuer.status==='SUSPENDED'?['REINSTATE','REVOKE']:['REINSTATE'];
+  async function submitAction(){if(!dialog||reason.trim().length<3)return;const key=`${dialog.issuer.id}:${dialog.action}`;setPending(key);setNotice(null);try{const updated=await api.transitionIssuer(dialog.issuer.id,dialog.action,reason.trim());setIssuers(items=>items.map(i=>i.id===updated.id?updated:i));setNotice({kind:'success',text:`${updated.name} is now ${updated.status.replaceAll('_',' ')}.`});setDialog(null);setReason('');await load()}catch(e){setNotice({kind:'error',text:e instanceof Error?e.message:'Status change failed; previous state was preserved.'})}finally{setPending(null)}}
+  async function submitRegister(event:FormEvent){event.preventDefault();setPending('register');setNotice(null);try{const created=await api.registerIssuer({...form,address:form.address||`local-${crypto.randomUUID()}`});setIssuers(items=>[...items,created]);setNotice({kind:'success',text:`${created.name} registered as pending verification.`});setRegister(false);setForm({name:'',jurisdiction:'',address:''});await load()}catch(e){setNotice({kind:'error',text:e instanceof Error?e.message:'Registration failed.'})}finally{setPending(null)}}
+  return <main className="flex-1 bg-[#070b14] p-4 sm:p-8 text-white"><div className="mx-auto max-w-6xl space-y-6">
+    <header className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-800 pb-5"><div><p className="font-mono text-xs text-sky-400">PUBLIC AUTHORITY REGISTRY · LOCAL ADMINISTRATIVE WORKFLOW</p><h1 className="text-3xl font-bold">Authority lifecycle</h1><p className="mt-1 text-sm text-slate-400">Registration does not certify an authority. Authentication and role controls are not configured in this prototype.</p></div><button onClick={()=>setRegister(true)} className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold"><Plus className="h-4 w-4"/>Register authority</button></header>
+    {notice&&<div role="status" className={`rounded-xl border p-3 text-sm ${notice.kind==='success'?'border-emerald-700 bg-emerald-950/40 text-emerald-200':'border-rose-700 bg-rose-950/40 text-rose-200'}`}>{notice.text}</div>}
+    {loading?<div className="flex items-center gap-2 text-slate-400"><Loader2 className="animate-spin"/>Loading authorities…</div>:<section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{issuers.map(issuer=><article key={issuer.id} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+      <div className="flex justify-between gap-3"><Building2 className="h-7 w-7 text-sky-400"/><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${tones[issuer.status]}`}>{issuer.status.replaceAll('_',' ')}</span></div>
+      <div><h2 className="font-bold">{issuer.name}</h2><p className="text-xs text-slate-400">{issuer.jurisdiction}</p>{issuer.demoRecord&&<p className="mt-1 text-[10px] font-mono text-violet-300">FICTIONAL SEEDED DEMO RECORD</p>}</div>
+      <dl className="space-y-2 rounded-lg bg-slate-950 p-3 text-xs"><div><dt className="text-slate-500">Last status change</dt><dd>{issuer.statusChangedAt?new Date(issuer.statusChangedAt).toLocaleString():'Not recorded'}</dd></div><div><dt className="text-slate-500">Reason</dt><dd>{issuer.statusReason||'No reason recorded'}</dd></div></dl>
+      <div className="flex flex-wrap gap-2 border-t border-slate-800 pt-3">{actions(issuer).map(action=><button key={action} disabled={pending!==null} onClick={()=>{setDialog({issuer,action});setReason('')}} className={`rounded-lg border px-3 py-2 text-xs font-semibold disabled:opacity-50 ${action==='REVOKE'?'border-rose-700 text-rose-300':action==='SUSPEND'?'border-orange-700 text-orange-300':'border-emerald-700 text-emerald-300'}`}>{action}</button>)}</div>
+    </article>)}</section>}
+  </div>
+  {dialog&&<div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4"><div role="dialog" aria-modal="true" className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6"><div className="flex gap-3"><AlertTriangle className="text-amber-400"/><div><h2 className="font-bold">{dialog.action} {dialog.issuer.name}</h2><p className="mt-1 text-xs text-slate-400">This records an administrative lifecycle transition and audit event.</p></div></div><label className="mt-5 block text-xs text-slate-300">Reason (required)<textarea autoFocus value={reason} onChange={e=>setReason(e.target.value)} className="mt-2 min-h-24 w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-white"/></label><div className="mt-4 flex justify-end gap-2"><button onClick={()=>setDialog(null)} className="rounded-lg bg-slate-800 px-4 py-2 text-sm">Cancel</button><button disabled={reason.trim().length<3||pending!==null} onClick={submitAction} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold disabled:opacity-50">{pending?<Loader2 className="h-4 w-4 animate-spin"/>:'Confirm'}</button></div></div></div>}
+  {register&&<div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4"><form onSubmit={submitRegister} className="w-full max-w-md space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-6"><h2 className="text-lg font-bold">Register authority</h2><p className="text-xs text-amber-300">New authorities start as PENDING VERIFICATION.</p>{(['name','jurisdiction','address'] as const).map(key=><label key={key} className="block text-xs capitalize text-slate-300">{key}<input required={key!=='address'} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white"/></label>)}<div className="flex justify-end gap-2"><button type="button" onClick={()=>setRegister(false)} className="rounded-lg bg-slate-800 px-4 py-2">Cancel</button><button disabled={pending!==null} className="rounded-lg bg-sky-600 px-4 py-2 font-semibold">{pending==='register'?'Registering…':'Register'}</button></div></form></div>}
+  </main>;
 }

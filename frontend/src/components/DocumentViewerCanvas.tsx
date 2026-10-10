@@ -41,6 +41,33 @@ export default function DocumentViewerCanvas({
   const pageClaims = claims.filter(c => c.sourcePage === currentPage);
   const selectedClaim = claims.find(c => c.id === selectedClaimId);
 
+  if (document.fileUrl) {
+    const isImage = document.mimeType?.startsWith('image/');
+    const mapped = Boolean(selectedClaim && selectedClaim.evidenceMappingStatus !== 'UNAVAILABLE' && selectedClaim.evidenceRegion && selectedClaim.evidenceRegion.width > 0);
+    return (
+      <div className="flex flex-col h-full min-h-[620px] bg-[#090d18] rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-900 border-b border-slate-800 text-xs">
+          <span className="font-medium text-white truncate">{document.title} · original upload</span>
+          <div className="flex gap-1">{Array.from({length: Math.max(1, document.pageCount)},(_,i)=>i+1).map(page => <button key={page} onClick={()=>handlePageSelect(page)} className={`px-2 py-1 rounded ${currentPage===page?'bg-sky-600 text-white':'bg-slate-800 text-slate-300'}`}>P.{page}</button>)}</div>
+        </div>
+        <div className="relative flex-1 overflow-auto bg-slate-950 p-3">
+          {isImage ? (
+            <div className="relative mx-auto w-fit max-w-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={document.fileUrl} alt={`Original uploaded document ${document.title}`} className="max-w-full h-auto" />
+              {mapped && selectedClaim && <button type="button" aria-label={`Evidence for ${selectedClaim.fieldName || selectedClaim.predicate}`} onClick={()=>onSelectClaim(selectedClaim.id)} className="absolute border-2 border-amber-400 bg-amber-300/25 ring-2 ring-black/30" style={{left:`${selectedClaim.evidenceRegion.x}%`,top:`${selectedClaim.evidenceRegion.y}%`,width:`${selectedClaim.evidenceRegion.width}%`,height:`${selectedClaim.evidenceRegion.height}%`}} />}
+            </div>
+          ) : (
+            <iframe title={`Original PDF: ${document.title}`} src={`${document.fileUrl}#page=${currentPage}&view=FitH`} className="h-full min-h-[560px] w-full rounded bg-white" />
+          )}
+        </div>
+        <div className="border-t border-slate-800 px-4 py-3 text-xs text-slate-300">
+          {selectedClaim ? mapped ? <><strong className="text-amber-300">Mapped evidence · page {selectedClaim.sourcePage}</strong><p className="mt-1">{selectedClaim.rawSnippet}</p>{!isImage && <p className="mt-1 text-slate-500">The PDF viewer opened the source page. Coordinates are recorded with the claim; browser PDF embeds cannot draw an overlay inside the native viewer.</p>}</> : <strong className="text-amber-300">EVIDENCE NOT AVAILABLE — the source region could not be resolved.</strong> : 'Select a claim to open its source page and evidence.'}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-[#090d18] rounded-xl border border-slate-800 overflow-hidden shadow-xl">
       {/* Top toolbar */}

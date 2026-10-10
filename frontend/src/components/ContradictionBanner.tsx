@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Contradiction } from '@/lib/types';
 import { AlertTriangle, ShieldAlert, Check, X, FileQuestion, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
+import Link from 'next/link';
 
 interface Props {
   contradiction: Contradiction;
@@ -13,15 +14,18 @@ interface Props {
 export default function ContradictionBanner({ contradiction, onResolved }: Props) {
   const [loading, setLoading] = useState(false);
   const [resolvedStatus, setResolvedStatus] = useState<string | null>(contradiction.reviewAction || null);
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleReviewAction = async (action: string) => {
     setLoading(true);
+    setError(null);
     try {
-      await api.reviewContradiction(contradiction.id, action, `Action taken by auditor: ${action}`);
+      await api.reviewContradiction(contradiction.id, action, notes);
       setResolvedStatus(action);
       if (onResolved) onResolved();
     } catch (err) {
-      console.error('Error reviewing contradiction:', err);
+      setError(err instanceof Error ? err.message : 'Review failed; the previous decision was preserved.');
     } finally {
       setLoading(false);
     }
@@ -65,23 +69,27 @@ export default function ContradictionBanner({ contradiction, onResolved }: Props
 
         {/* Action Controls for Human Reviewer */}
         {!resolvedStatus ? (
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-col gap-2 shrink-0 w-full md:w-72">
+            <textarea value={notes} onChange={event=>setNotes(event.target.value)} placeholder="Review notes (required)" className="min-h-16 rounded-lg border border-slate-700 bg-slate-950 p-2 text-xs text-white" />
+            <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleReviewAction('FLAG_INCONSISTENCY')}
-              disabled={loading}
+              disabled={loading || notes.trim().length < 3}
               className="flex items-center space-x-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 px-3 py-1.5 text-xs font-semibold text-amber-300 transition-colors"
             >
               <FileQuestion className="h-3.5 w-3.5" />
               <span>Flag Inconsistency</span>
             </button>
+            <button onClick={()=>handleReviewAction('RESOLVE')} disabled={loading||notes.trim().length<3} className="rounded-lg border border-emerald-700 px-3 py-1.5 text-xs font-semibold text-emerald-300">Resolve after review</button>
             <button
               onClick={() => handleReviewAction('DISMISS')}
-              disabled={loading}
+              disabled={loading || notes.trim().length < 3}
               className="flex items-center space-x-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
               <span>Dismiss</span>
             </button>
+            </div>
           </div>
         ) : (
           <div className="rounded-lg bg-emerald-950/60 border border-emerald-800/80 px-3 py-1.5 text-xs text-emerald-300 font-mono flex items-center space-x-1.5">
@@ -90,6 +98,7 @@ export default function ContradictionBanner({ contradiction, onResolved }: Props
           </div>
         )}
       </div>
+      {error&&<p role="alert" className="mt-3 rounded-lg bg-rose-950 p-2 text-xs text-rose-200">{error}</p>}
 
       {/* Breakdown of conflicting values across documents */}
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-rose-900/40 text-xs">
@@ -115,6 +124,7 @@ export default function ContradictionBanner({ contradiction, onResolved }: Props
           </div>
         ))}
       </div>
+      <div className="mt-4 space-y-3 border-t border-rose-900/40 pt-4 text-xs"><p><strong>Why flagged:</strong> {contradiction.comparisonBasis || contradiction.explanation}</p><p className="text-slate-400">Detected {new Date(contradiction.detectedAt).toLocaleString()}. A discrepancy requires human review and does not establish legal truth.</p>{contradiction.uncertainties?.map(item=><p key={item} className="text-amber-300">Uncertainty: {item}</p>)}<div className="grid gap-2 md:grid-cols-2">{contradiction.sources?.map(source=><div key={source.claimId} className="rounded-lg border border-slate-800 bg-slate-950 p-3"><p className="font-semibold text-white">{source.documentTitle}</p><p>{contradiction.field}: <strong>{source.value}</strong></p><p>Page {source.page ?? 'unknown'}</p><blockquote className="mt-2 border-l-2 border-slate-700 pl-2 text-slate-400">{source.snippet || 'Original source passage unavailable'}</blockquote>{source.evidenceAvailable?<Link className="mt-2 inline-block text-sky-400" href={`/documents/${source.documentId}?page=${source.page||1}&claim=${source.claimId}`}>Open source evidence →</Link>:<p className="mt-2 text-amber-300">Evidence unavailable</p>}</div>)}</div></div>
     </div>
   );
 }

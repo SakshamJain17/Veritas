@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 import hashlib
 import copy
+from app.storage import load_state, save_state, local_persistence_enabled
 
 DEMO_ISSUERS: List[Dict[str, Any]] = [
     {
@@ -862,6 +863,43 @@ class VeritasDatabase:
         self.advisor_reports = []
         self.correction_requests = []
         self.network_mode = "demo"  # "demo" or "testnet"
+        self._normalise_seed_data()
+        saved = load_state()
+        if saved:
+            for key in ("documents", "claims", "issuers", "contradictions", "audit_trail", "advisor_reports", "correction_requests", "network_mode"):
+                if key in saved:
+                    setattr(self, key, saved[key])
+
+    def _normalise_seed_data(self):
+        for issuer in self.issuers:
+            issuer.setdefault("status", "REVOKED" if issuer.get("isRevoked") else "VERIFIED")
+            issuer.setdefault("demoRecord", True)
+            issuer.setdefault("statusChangedAt", issuer.get("registeredAt"))
+            issuer.setdefault("statusReason", "Seeded fictional demonstration authority")
+            issuer.setdefault("revokedAt", None)
+            issuer.setdefault("statusHistory", [])
+        for document in self.documents:
+            document.setdefault("fileAvailable", False)
+            document.setdefault("fileAccess", "NOT_RETAINED")
+            document.setdefault("mimeType", None)
+            document.setdefault("fileUrl", None)
+            document.setdefault("extractionSummary", None)
+
+    @property
+    def persistence_mode(self):
+        return "SQLITE_LOCAL" if local_persistence_enabled() else "EPHEMERAL_SERVERLESS"
+
+    def persist(self):
+        save_state({
+            "documents": self.documents,
+            "claims": self.claims,
+            "issuers": self.issuers,
+            "contradictions": self.contradictions,
+            "audit_trail": self.audit_trail,
+            "advisor_reports": self.advisor_reports,
+            "correction_requests": self.correction_requests,
+            "network_mode": self.network_mode,
+        })
 
     def reset(self):
         self.documents = copy.deepcopy(DEMO_DOCUMENTS)
@@ -874,5 +912,7 @@ class VeritasDatabase:
         self.advisor_reports = []
         self.correction_requests = []
         self.network_mode = "demo"
+        self._normalise_seed_data()
+        self.persist()
 
 db = VeritasDatabase()

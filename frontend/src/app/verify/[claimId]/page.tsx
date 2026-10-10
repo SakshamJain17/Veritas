@@ -29,12 +29,13 @@ export default function PublicClaimVerificationPage({ params }: { params: Promis
   const [showEvidence, setShowEvidence] = useState(true);
   const [loading, setLoading] = useState(true);
   const [copiedHash, setCopiedHash] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api.verifyClaimPublic(claimId).then(data => {
       setVerification(data);
       setLoading(false);
-    });
+    }).catch(err=>{setError(err instanceof Error?err.message:'Verification record unavailable');setLoading(false)});
   }, [claimId]);
 
   const copyHash = (hash: string) => {
@@ -43,7 +44,7 @@ export default function PublicClaimVerificationPage({ params }: { params: Promis
     setTimeout(() => setCopiedHash(false), 2000);
   };
 
-  if (loading || !verification) {
+  if (loading) {
     return (
       <div className="flex-1 bg-[#070b14] flex items-center justify-center p-8 text-slate-400">
         <div className="text-center space-y-3">
@@ -53,6 +54,7 @@ export default function PublicClaimVerificationPage({ params }: { params: Promis
       </div>
     );
   }
+  if (error || !verification) return <div role="alert" className="m-8 rounded-xl border border-rose-800 bg-rose-950/40 p-5 text-rose-200">{error || 'Verification record unavailable'}</div>;
 
   const isVerified = verification.isVerified;
   const isConsistent = verification.crossDocumentConsistency.isConsistent;
@@ -81,6 +83,7 @@ export default function PublicClaimVerificationPage({ params }: { params: Promis
           ? 'bg-gradient-to-b from-rose-950/40 via-slate-900/95 to-slate-900/95 border-rose-500/60'
           : 'bg-gradient-to-b from-amber-950/40 via-slate-900/95 to-slate-900/95 border-amber-500/60'
       }`}>
+        {verification.evidence.conflictEvidenceUnavailable && <div role="alert" className="rounded-xl border border-rose-600 bg-rose-950/60 p-4 text-sm font-bold text-rose-100">CONFLICT DETECTED — ORIGINAL EVIDENCE UNAVAILABLE<p className="mt-1 text-xs font-normal text-rose-200">The comparison result exists, but the relevant source file cannot be inspected from this public page. No replacement document has been supplied.</p></div>}
         {/* Verification Status Banner */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center space-x-3">
@@ -129,7 +132,7 @@ export default function PublicClaimVerificationPage({ params }: { params: Promis
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80">
             <span className="text-slate-300">Evidence Physical Integrity:</span>
             <span className="text-amber-300 font-bold flex items-center space-x-1">
-              <span>Original file unavailable for recheck</span>
+              <span>{verification.evidence.originalAvailable ? 'Selected evidence retained; full file restricted' : `Original file ${verification.evidence.availability || 'unavailable'}`}</span>
             </span>
           </div>
 
@@ -137,7 +140,7 @@ export default function PublicClaimVerificationPage({ params }: { params: Promis
             <span className="text-slate-300">Issuing Authority Status:</span>
             <span className="text-amber-300 font-bold flex items-center space-x-1">
               <Building2 className="h-3.5 w-3.5" />
-              <span>Demo registry entry ({verification.issuer.name.substring(0, 16)}...)</span>
+              <span>{verification.issuer.registryStatus || 'UNKNOWN'} ({verification.issuer.name.substring(0, 16)}...)</span>
             </span>
           </div>
 
