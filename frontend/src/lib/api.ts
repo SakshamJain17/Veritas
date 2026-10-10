@@ -230,8 +230,11 @@ export const api = {
   // Public Verification
   async verifyClaimPublic(claimId: string): Promise<PublicVerificationPackage> {
     const sessionClaim = readSessionClaim(claimId);
-    const claim = sessionClaim?.claim || INITIAL_CLAIMS.find(c => c.id === claimId) || INITIAL_CLAIMS[0];
-    const doc = sessionClaim?.document || INITIAL_DOCUMENTS.find(d => d.id === claim.sourceDocumentId) || INITIAL_DOCUMENTS[0];
+    if (!sessionClaim) {
+      return safeFetch<PublicVerificationPackage>(`/api/verify/${encodeURIComponent(claimId)}`);
+    }
+    const claim = sessionClaim.claim;
+    const doc = sessionClaim.document;
     const issuer = INITIAL_ISSUERS.find(i => i.id === claim.issuerId) || INITIAL_ISSUERS[0];
 
     const fallback: PublicVerificationPackage = {
@@ -280,8 +283,7 @@ export const api = {
       timestamp: new Date().toISOString()
     };
 
-    if (sessionClaim) return fallback;
-    return safeFetch<PublicVerificationPackage>(`/api/verify/${claimId}`, {}, fallback);
+    return fallback;
   },
 
   // Graph

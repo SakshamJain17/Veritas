@@ -8,11 +8,17 @@ import Link from 'next/link';
 export default function VerifyPortalLookupPage() {
   const router = useRouter();
   const [claimInput, setClaimInput] = useState('');
+  const [lookupError, setLookupError] = useState('');
 
   const handleLookup = (e: React.FormEvent) => {
     e.preventDefault();
     if (!claimInput.trim()) return;
     const cleanId = claimInput.trim().toLowerCase();
+    if (!/^claim-[a-z0-9]+$/.test(cleanId)) {
+      setLookupError('Enter a valid identifier such as claim-1.');
+      return;
+    }
+    setLookupError('');
     router.push(`/verify/${cleanId}`);
   };
 
@@ -39,6 +45,7 @@ export default function VerifyPortalLookupPage() {
 
         {/* Lookup Form */}
         <form onSubmit={handleLookup} className="space-y-4">
+          {lookupError && <p role="alert" className="rounded-lg border border-rose-800 bg-rose-950/40 p-2 text-xs text-rose-200">{lookupError}</p>}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input

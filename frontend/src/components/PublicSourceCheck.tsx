@@ -10,7 +10,7 @@ export default function PublicSourceCheck({ claimId }: { claimId: string }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.getSourceCheck(claimId).then(setCheck).catch(() => setError('The source-check service is unavailable.'));
+    api.getSourceCheck(claimId).then(setCheck).catch((err) => setError(err instanceof Error ? err.message : 'The source-check service is unavailable.'));
   }, [claimId]);
 
   async function run() {
@@ -18,8 +18,8 @@ export default function PublicSourceCheck({ claimId }: { claimId: string }) {
     setError('');
     try {
       setCheck(await api.runSourceCheck(claimId));
-    } catch {
-      setError('The source check could not be completed.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The source check could not be completed.');
     } finally {
       setBusy(false);
     }
@@ -32,7 +32,7 @@ export default function PublicSourceCheck({ claimId }: { claimId: string }) {
           <h2 className="font-bold text-white">Public source observation</h2>
           <p className="text-xs text-slate-400">TinyFish Fetch · separate from claim, issuer, and ledger checks</p>
         </div>
-        <span className="rounded border border-sky-700 bg-sky-950 px-2 py-1 text-xs font-mono text-sky-300">{check?.status?.replaceAll('_', ' ') || 'LOADING'}</span>
+        <span className={`rounded border px-2 py-1 text-xs font-mono ${error ? 'border-rose-700 bg-rose-950 text-rose-300' : 'border-sky-700 bg-sky-950 text-sky-300'}`}>{error ? 'ERROR' : check?.status?.replaceAll('_', ' ') || 'LOADING'}</span>
       </div>
       <p className="text-xs text-slate-300">{error || check?.message || 'Loading source profile…'}</p>
       {check?.sourceUrl && (
@@ -51,7 +51,7 @@ export default function PublicSourceCheck({ claimId }: { claimId: string }) {
         <div className="rounded-lg bg-slate-950 p-2">Issuer attestation: <strong>Not checked</strong></div>
       </div>
       <p className="text-xs text-amber-300">This public dashboard supplies jurisdiction context only. It does not prove who owns the fictional demo parcel.</p>
-      {check?.status !== 'UNSUPPORTED' && (
+      {!error && check?.status !== 'UNSUPPORTED' && (
         <button onClick={run} disabled={busy} className="rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
           {busy ? 'Checking public source…' : check?.status === 'SAVED_DEMO' ? 'Retry live TinyFish check' : 'Run TinyFish check'}
         </button>
