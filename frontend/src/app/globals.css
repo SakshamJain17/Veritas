@@ -1,0 +1,426 @@
+@import "tailwindcss";
+
+:root {
+  --background: #070b14;
+  --foreground: #f1f5f9;
+  --card: #0d1527;
+  --card-foreground: #f8fafc;
+  --card-border: #1e293b;
+  --primary: #0284c7;
+  --primary-foreground: #ffffff;
+  --accent: #38bdf8;
+  --accent-muted: rgba(56, 189, 248, 0.1);
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+
+body {
+  background-color: #070b14;
+  color: #f1f5f9;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism */
+.glass-panel {
+  background: rgba(13, 21, 39, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-subtle {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-glow {
+  box-shadow: 0 0 30px -10px rgba(14, 165, 233, 0.18);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25);
+}
+
+.glow-rose {
+  box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.25);
+}
+
+/* Technical grid background */
+.tech-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090e1a;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Animations */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Shimmer scanline */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1000%); }
+}
+
+.animate-scanline {
+  animation: scanline 4s linear infinite;
+}
+
+/* Formal landing page with a live product preview inside a laptop frame. */
+.product-landing { min-height: 100vh; color: #f5f5f7; background: #050608; font-family: Arial, Helvetica, sans-serif; }
+.product-header { position: relative; z-index: 5; display: flex; align-items: center; justify-content: space-between; height: 66px; max-width: 1280px; padding: 0 30px; margin: auto; border-bottom: 1px solid #ffffff16; }
+.product-wordmark { display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 800; letter-spacing: .12em; }
+.product-wordmark svg { color: #91b8f6; }
+.product-header nav { display: flex; gap: clamp(18px,3vw,40px); align-items: center; }
+.product-header nav a { font-size: 12px; color: #acafb8; transition: color .2s; }
+.product-header nav a:hover { color: #fff; }
+.product-header-action { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid #596373; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.product-header-action:hover { background: #1d283a; }
+.product-hero { position: relative; min-height: 900px; overflow: hidden; padding: 74px 24px 48px; background: radial-gradient(ellipse 60% 45% at 50% 57%, #1b273b 0%, #0b111e 46%, #050608 100%); }
+.product-hero::before { position: absolute; content: ''; left: 50%; top: 500px; transform: translateX(-50%); width: min(1100px,95%); height: 400px; border-radius: 50%; background: #6e92d11b; filter: blur(75px); pointer-events: none; }
+.product-hero-copy { position: relative; z-index: 2; max-width: 800px; margin: auto; text-align: center; }
+.product-eyebrow { display: block; color: #9ab6e6; font-size: 10px; font-weight: 700; letter-spacing: .23em; }
+.product-hero h1 { margin: 19px 0 16px; font-size: clamp(47px, 7vw, 91px); font-weight: 700; letter-spacing: -.071em; line-height: 1.04; }
+.product-hero h1 span { background: linear-gradient(115deg,#fff 8%,#c4d8f2 52%,#748dad); color: transparent; background-clip: text; }
+.product-hero-copy > p { color: #b6bcc8; font-size: clamp(14px,1.7vw,18px); line-height: 1.55; max-width: 610px; margin: auto; }
+.product-actions { display: flex; justify-content: center; gap: 12px; margin-top: 27px; }
+.product-actions a { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 42px; padding: 11px 19px; border-radius: 999px; font-size: 13px; font-weight: 700; transition: transform .2s, background .2s; }
+.product-actions a:hover { transform: translateY(-2px); }
+.product-primary { background: #e9eef7; color: #131d2d; }
+.product-primary:hover { background: #fff; }
+.product-secondary { border: 1px solid #576273; color: #e8edf7; }
+.product-secondary:hover { background: #19253a; }
+.product-trust { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px 24px; margin-top: 24px; color: #8f9aad; font-size: 11px; }
+.product-trust span { display: inline-flex; align-items: center; gap: 6px; }
+.product-trust svg { color: #8fb2ea; }
+.macbook-stage { position: relative; max-width: 1010px; margin: 66px auto 0; perspective: 1500px; }
+.macbook-glow { position: absolute; z-index: 0; left: 10%; right: 10%; bottom: 0; height: 70%; border-radius: 50%; background: #688dd652; filter: blur(85px); }
+.macbook-device { position: relative; z-index: 1; transform-origin: center bottom; animation: macbook-arrive 1.2s cubic-bezier(.2,.7,.1,1) both; }
+.macbook-display { position: relative; width: 87%; margin: auto; padding: 12px 12px 11px; border: 1px solid #6c727e; border-radius: 17px 17px 7px 7px; background: linear-gradient(145deg,#303641,#07090d 22%,#0b0d11 88%,#4b505a); box-shadow: 0 0 0 2px #10151f, 0 15px 45px #000b; }
+.macbook-camera { position: absolute; z-index: 2; left: 50%; top: 4px; transform: translateX(-50%); width: 35px; height: 6px; border-radius: 0 0 5px 5px; background: #020305; }
+.macbook-camera::after { content: ''; position: absolute; left: 50%; top: 2px; width: 2px; height: 2px; border-radius: 50%; background: #2d425d; }
+.macbook-screen { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: #080e18; border: 1px solid #3b4250; border-radius: 5px; }
+.macbook-screen iframe { width: 100%; height: 100%; border: 0; pointer-events: none; }
+.macbook-screen::after { position: absolute; content: ''; inset: 0; pointer-events: none; background: linear-gradient(125deg,#ffffff16,transparent 26%,transparent 72%,#a4c3ee0c); }
+.macbook-screen-link { position: absolute; z-index: 2; right: 14px; bottom: 14px; display: inline-flex; align-items: center; gap: 8px; background: #eff5ff; color: #172238; padding: 9px 13px; border-radius: 7px; font-size: 10px; font-weight: 800; letter-spacing: .06em; box-shadow: 0 5px 20px #0009; }
+.macbook-screen-link:hover { background: #fff; }
+.macbook-base { position: relative; height: 23px; margin-top: -1px; border-radius: 2px 2px 50% 50% / 2px 2px 100% 100%; background: linear-gradient(#8a909a 0%,#d4d7da 29%,#6e7580 57%,#30343b 91%); box-shadow: 0 15px 18px #000a; }
+.macbook-base-notch { position: absolute; top: 0; left: 40%; width: 20%; height: 6px; background: linear-gradient(#454c58,#858b96); border-radius: 0 0 12px 12px; }
+.macbook-caption { position: relative; z-index: 1; margin-top: 23px; text-align: center; color: #8993a4; font-size: 11px; letter-spacing: .03em; }
+.product-scroll { position: relative; display: grid; place-items: center; width: 36px; height: 36px; margin: 29px auto 0; border: 1px solid #4c5668; border-radius: 50%; color: #9ca9bc; }
+.product-scroll:hover { color: white; border-color: white; }
+.product-details { padding: 100px 24px 110px; background: #f5f5f7; color: #111827; }
+.product-details-heading { max-width: 780px; margin: auto; text-align: center; }
+.product-details-heading .product-eyebrow { color: #4a6fa7; }
+.product-details h2 { margin: 15px 0; font-size: clamp(38px,5.4vw,69px); line-height: 1.08; letter-spacing: -.06em; font-weight: 750; }
+.product-details h2 span { color: #7a8494; }
+.product-details-heading p { max-width: 650px; margin: auto; color: #5a6372; font-size: 16px; line-height: 1.6; }
+.product-capabilities { display: grid; grid-template-columns: repeat(3,1fr); gap: 17px; max-width: 1100px; margin: 57px auto 0; }
+.product-capability { min-height: 210px; padding: 28px; background: #fff; border: 1px solid #e1e5ec; border-radius: 18px; box-shadow: 0 8px 30px #17233f0a; }
+.product-capability-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 13px; background: #edf3fc; color: #3e649a; }
+.product-capability h3 { margin-top: 25px; font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
+.product-capability p { margin-top: 8px; color: #687182; font-size: 13px; line-height: 1.55; }
+.product-privacy { display: flex; align-items: center; gap: 17px; max-width: 1100px; margin: 22px auto 0; padding: 19px 23px; border: 1px solid #dce4ef; border-radius: 15px; background: #eaf0f8; color: #3b4c65; }
+.product-privacy > svg { flex: none; }
+.product-privacy p { flex: 1; font-size: 12px; line-height: 1.5; }
+.product-privacy a { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 12px; font-weight: 700; color: #275996; }
+@keyframes macbook-arrive { from { opacity: .3; transform: translateY(70px) rotateX(-17deg) scale(.89); } to { opacity: 1; transform: translateY(0) rotateX(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .macbook-device { animation: none; } .product-actions a { transition: none; } }
+@media (max-width: 700px) { .product-header { height: 58px; padding: 0 18px; } .product-wordmark { font-size: 13px; } .product-wordmark svg { width: 19px; } .product-header nav { display: none; } .product-header-action { font-size: 11px; } .product-hero { min-height: auto; padding: 72px 15px 55px; } .product-hero h1 { font-size: clamp(43px,10vw,62px); } .product-actions { flex-wrap: wrap; } .product-trust { gap: 9px 14px; } .macbook-stage { margin-top: 58px; } .macbook-display { width: 96%; padding: 6px; border-radius: 10px 10px 4px 4px; } .macbook-camera { width: 20px; top: 2px; height: 3px; } .macbook-base { height: 13px; } .macbook-screen-link { right: 5px; bottom: 5px; padding: 6px; font-size: 7px; } .macbook-screen-link svg { display: none; } .product-details { padding: 75px 20px; } .product-capabilities { grid-template-columns: 1fr; margin-top: 35px; } .product-capability { min-height: auto; } .product-privacy { align-items: flex-start; flex-wrap: wrap; } .product-privacy a { width: 100%; margin-left: 35px; } }
+
+/* Shared document workspace: a quiet, consistent surface across every app page. */
+.workspace-shell { min-height: 100vh; display: flex; flex-direction: column; background: #f5f7fa; color: #1a2434; font-family: Arial, Helvetica, sans-serif; }
+.workspace-main { flex: 1; display: flex; flex-direction: column; width: 100%; }
+.workspace-header { position: sticky; top: 0; z-index: 50; background: #fffffff2; border-bottom: 1px solid #dce3ed; backdrop-filter: blur(18px); }
+.workspace-header-inner { max-width: 1440px; height: 68px; padding: 0 clamp(18px,3vw,46px); margin: auto; display: flex; align-items: center; gap: 28px; }
+.workspace-logo { display: flex; align-items: center; gap: 10px; flex: none; color: #162238; }
+.workspace-logo-mark { display: grid; place-items: center; width: 35px; height: 35px; color: #fff; background: #1c365c; border-radius: 10px; }
+.workspace-logo strong { display: block; font-size: 14px; letter-spacing: .12em; line-height: 1.1; }
+.workspace-logo small { display: block; margin-top: 3px; color: #798496; font-size: 10px; letter-spacing: .02em; }
+.workspace-nav { display: flex; align-items: center; gap: 3px; margin: auto; padding: 4px; background: #eef2f7; border-radius: 11px; }
+.workspace-nav a { padding: 9px 13px; border-radius: 8px; font-size: 12px; font-weight: 600; color: #697587; white-space: nowrap; }
+.workspace-nav a:hover { color: #18375f; }
+.workspace-nav a.active { background: #fff; color: #1c365c; box-shadow: 0 1px 5px #1d35501f; }
+.workspace-actions { display: flex; align-items: center; gap: 10px; }
+.workspace-mode { display: flex; align-items: center; gap: 6px; padding: 0 8px; white-space: nowrap; color: #758297; font-size: 10px; }
+.workspace-mode i { width: 6px; height: 6px; border-radius: 50%; background: #36a581; }
+.workspace-upload { display: flex; align-items: center; gap: 7px; padding: 10px 12px; background: #1c365c; color: #fff; border-radius: 9px; white-space: nowrap; font-size: 11px; font-weight: 700; }
+.workspace-upload:hover { background: #2a4a74; }
+.workspace-settings { display: grid; place-items: center; width: 34px; height: 34px; color: #6d7a8a; border: 1px solid #dfe5ed; border-radius: 9px; }
+.workspace-settings:hover { background: #eef2f7; }
+.workspace-menu-button { display: none; color: #253d60; }
+.workspace-footer { display: flex; align-items: center; justify-content: space-between; gap: 25px; padding: 26px clamp(18px,3vw,46px); border-top: 1px solid #dce3ed; background: #fff; color: #758298; font-size: 11px; }
+.workspace-footer > div > span { display: flex; align-items: center; gap: 6px; color: #1c365c; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.workspace-footer p { margin-top: 5px; }
+.workspace-footer nav { display: flex; gap: 20px; }
+.workspace-footer a:hover { color: #1c365c; }
+.workspace-footer small { font-size: 10px; }
+
+/* Existing workflow screens share the same neutral surfaces and readable hierarchy. */
+.workspace-shell [class*='bg-[#070b14]'], .workspace-shell [class*='bg-[#050810]'], .workspace-shell [class*='bg-[#090d18]'], .workspace-shell [class*='bg-[#04070f]'] { background-color: #f5f7fa !important; }
+.workspace-shell [class*='bg-slate-900'], .workspace-shell [class*='bg-[#0d1527]'] { background-color: #fff !important; }
+.workspace-shell [class*='bg-slate-950'] { background-color: #f6f8fb !important; }
+.workspace-shell [class*='bg-slate-800'] { background-color: #edf1f6 !important; }
+.workspace-shell [class*='bg-slate-700'] { background-color: #e7ecf3 !important; }
+.workspace-shell [class*='border-slate-800'], .workspace-shell [class*='border-slate-700'], .workspace-shell [class*='border-slate-600'], .workspace-shell [class*='border-slate-900'] { border-color: #dce3ec !important; }
+.workspace-shell [class~='text-white'], .workspace-shell [class*='text-slate-100'], .workspace-shell [class*='text-slate-200'] { color: #1c2738 !important; }
+.workspace-shell [class*='text-slate-300'] { color: #425067 !important; }
+.workspace-shell [class*='text-slate-400'] { color: #627087 !important; }
+.workspace-shell [class*='text-slate-500'] { color: #7d8a9b !important; }
+.workspace-shell [class*='text-sky-400'], .workspace-shell [class*='text-blue-400'] { color: #27649d !important; }
+.workspace-shell [class*='text-emerald-400'] { color: #167a5b !important; }
+.workspace-shell [class*='text-rose-400'] { color: #b3435a !important; }
+.workspace-shell [class*='bg-sky-950'], .workspace-shell [class*='bg-blue-950'] { background-color: #eaf2fc !important; }
+.workspace-shell [class*='bg-emerald-950'] { background-color: #e9f6f0 !important; }
+.workspace-shell [class*='bg-rose-950'] { background-color: #fceef1 !important; }
+.workspace-shell [class*='bg-purple-950'] { background-color: #f1edfc !important; }
+.workspace-shell [class*='from-emerald-950'], .workspace-shell [class*='from-rose-950'] { background-image: none !important; background-color: #fff !important; }
+.workspace-shell :is(a,button)[class*='bg-sky-600'], .workspace-shell :is(a,button)[class*='bg-blue-600'] { background-color: #1c365c !important; color: #fff !important; box-shadow: none !important; }
+.workspace-shell :is(a,button)[class*='bg-sky-600']:hover, .workspace-shell :is(a,button)[class*='bg-blue-600']:hover { background-color: #2a4b73 !important; }
+.workspace-shell :is(a,button)[class*='bg-sky-600'] *, .workspace-shell :is(a,button)[class*='bg-blue-600'] * { color: #fff !important; }
+.workspace-shell input:not([type='checkbox']):not([type='radio']), .workspace-shell textarea, .workspace-shell select { color: #1c2738 !important; background-color: #fff !important; border-color: #cdd6e3 !important; }
+.workspace-shell input::placeholder, .workspace-shell textarea::placeholder { color: #8a96a6 !important; }
+.workspace-shell table { background: #fff; }
+.workspace-shell th { color: #69788d !important; background: #f3f6fa !important; }
+.workspace-shell tr { border-color: #e0e6ee !important; }
+.workspace-shell [class*='shadow-2xl'], .workspace-shell [class*='shadow-xl'] { box-shadow: 0 12px 38px #17233f12 !important; }
+.workspace-shell .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+@media (max-width: 1120px) { .workspace-header-inner { gap: 13px; } .workspace-mode { display: none; } .workspace-nav a { padding: 9px 10px; } }
+@media (max-width: 880px) { .workspace-nav, .workspace-actions { display: none; } .workspace-header-inner { justify-content: space-between; } .workspace-menu-button { display: grid; place-items: center; width: 38px; height: 38px; } .workspace-mobile-nav { display: grid; gap: 3px; padding: 10px 18px 15px; border-top: 1px solid #e4e9f0; background: #fff; } .workspace-mobile-nav a { display: flex; align-items: center; gap: 10px; padding: 11px 9px; border-radius: 8px; color: #40506a; font-size: 13px; } .workspace-mobile-nav a:hover { background: #eef2f7; } }
+@media (max-width: 700px) { .workspace-footer { flex-wrap: wrap; gap: 13px; } .workspace-footer nav { order: 3; width: 100%; } .workspace-footer small { margin-left: auto; } }
+.workspace-shell [class*='text-rose-300'], .workspace-shell [class*='text-rose-200'] { color: #a4364f !important; }
+.workspace-shell [class*='text-emerald-300'], .workspace-shell [class*='text-emerald-200'] { color: #126d50 !important; }
+.workspace-shell [class*='text-sky-300'], .workspace-shell [class*='text-blue-300'] { color: #285e96 !important; }
+.workspace-shell [class*='text-amber-300'], .workspace-shell [class*='text-amber-200'] { color: #845611 !important; }
+.workspace-shell [class*='text-purple-300'] { color: #6845a0 !important; }
+.workspace-shell [class*='bg-amber-600'] { background-color: #fff2d7 !important; }
+.workspace-shell [class*='border-rose-800'], .workspace-shell [class*='border-rose-900'] { border-color: #eac3ce !important; }
+.workspace-shell [class*='border-emerald-800'] { border-color: #bedfd2 !important; }
+.workspace-shell [class*='border-sky-800'] { border-color: #c3d7ef !important; }
+@media (min-width: 881px) and (max-width: 1120px) { .workspace-nav a:nth-last-child(-n+2) { display: none; } }
+
+/* Interactive laptop: the screen remains a real dashboard, with the keyboard seen from above. */
+.macbook-screen iframe { pointer-events: auto; display: block; }
+.macbook-hinge { width: 86%; height: 7px; margin: -1px auto 0; background: linear-gradient(#101319,#535965,#1d232c); border-radius: 0 0 8px 8px; }
+.macbook-deck { position: relative; width: 100%; height: clamp(125px, 16vw, 215px); margin-top: -1px; padding: clamp(8px,1vw,14px) 9% 10px; clip-path: polygon(7% 0,93% 0,100% 100%,0 100%); border-radius: 3px 3px 20px 20px; background: linear-gradient(160deg,#8c929d 0%,#c0c4cb 24%,#a4aab4 72%,#6f7681 100%); box-shadow: inset 0 5px 7px #171d2866; transform: perspective(900px) rotateX(30deg); transform-origin: center top; }
+.macbook-keyboard { display: flex; flex-direction: column; gap: clamp(2px,.32vw,5px); width: 100%; margin: 0 auto; padding: 2px 3px; border-radius: 7px; background: #737b86; }
+.macbook-key-row { display: flex; gap: clamp(2px,.32vw,5px); width: 100%; }
+.macbook-key { display: flex; flex: 1; align-items: center; justify-content: center; min-width: 0; height: clamp(11px,1.7vw,21px); border-radius: 3px; background: linear-gradient(#202329,#0b0c0f); color: #b5b8c0; font-size: clamp(4px,.55vw,7px); box-shadow: inset 0 1px 1px #545b6680,0 1px 1px #383e48; }
+.macbook-key-wide { flex: 1.45; }
+.macbook-key-space { flex: 5; }
+.macbook-trackpad { width: 35%; height: 30%; margin: clamp(6px,.75vw,11px) auto 0; border: 1px solid #69717f; border-radius: 6px; background: #b1b7c0; box-shadow: inset 0 1px 2px #5a626d55; }
+.macbook-caption { margin-top: -3px; }
+.macbook-caption a { display: inline-flex; align-items: center; gap: 3px; color: #d6e6ff; text-decoration: underline; text-underline-offset: 3px; }
+@media (min-width: 900px) {
+  .product-hero { display: grid; grid-template-columns: minmax(300px,.8fr) minmax(0,1.2fr); gap: clamp(28px,4vw,80px); align-items: center; min-height: min(800px,calc(100vh - 66px)); padding: 60px max(30px,calc((100vw - 1350px)/2)); }
+  .product-hero::before { left: 70%; top: 26%; }
+  .product-hero-copy { max-width: 540px; margin: 0; text-align: left; }
+  .product-hero h1 { font-size: clamp(51px,5.3vw,80px); }
+  .product-hero-copy > p { margin: 0; }
+  .product-actions, .product-trust { justify-content: flex-start; }
+  .macbook-stage { width: 100%; max-width: 760px; margin: 0; }
+  .product-scroll { position: absolute; bottom: 24px; left: 50%; margin: 0; }
+}
+@media (max-width: 700px) {
+  .macbook-deck { height: 100px; padding-top: 7px; }
+  .macbook-key { height: 11px; }
+  .macbook-trackpad { margin-top: 5px; }
+  .macbook-caption { margin-top: 0; }
+}
+
+/* Reduce competing decoration across the document workspace. */
+.workspace-shell main > div { max-width: 1120px; }
+.workspace-shell .glass-glow, .workspace-shell .glow-emerald, .workspace-shell .glow-rose { box-shadow: none; }
+.workspace-shell [class*='shadow-xl'], .workspace-shell [class*='shadow-2xl'] { box-shadow: 0 7px 26px #1d30420b !important; }
+.workspace-shell [class*='font-mono'][class*='uppercase'] { letter-spacing: .04em; }
+.workspace-shell [class*='rounded-2xl'][class*='border'] { border-color: #e2e7ee !important; }
+.workspace-shell [class*='bg-slate-900'][class*='border'] { box-shadow: 0 2px 12px #1d304208; }
+
+/* Product presentation: a restrained space-black laptop and a fixed, scroll-free app preview. */
+.product-hero { display: block; min-height: auto; padding: 66px 24px 54px; background: radial-gradient(ellipse 64% 47% at 50% 65%,#202a3b 0%,#0a0e16 55%,#030406 100%); }
+.product-hero::before { left: 50%; top: 45%; width: min(1150px,90vw); height: 360px; background: #627cad12; }
+.product-hero-copy { max-width: 850px; margin: 0 auto; text-align: center; }
+.product-hero h1 { margin: 12px 0 12px; font-size: clamp(48px,7vw,82px); }
+.product-hero-copy > p { margin: auto; max-width: 670px; }
+.product-actions,.product-trust { justify-content: center; }
+.macbook-stage { max-width: 1050px; width: 100%; margin: 49px auto 0; perspective: 1200px; }
+.macbook-glow { left: 10%; right: 10%; bottom: 8%; height: 48%; background: #93acdf16; filter: blur(95px); }
+.macbook-device { filter: drop-shadow(0 30px 32px #000b); }
+.macbook-display { width: 88%; padding: 10px 10px 12px; border: 1px solid #40464e; border-radius: 19px 19px 5px 5px; background: linear-gradient(130deg,#505661,#14171c 4%,#090b0f 50%,#272c33 96%,#6b717a); box-shadow: inset 0 1px 2px #8b919a66,0 0 0 1px #080a0d,0 16px 20px #0005; }
+.macbook-camera { top: 4px; width: 43px; height: 5px; background: #020305; }
+.macbook-screen { aspect-ratio: 16 / 9.3; border: 1px solid #08090b; border-radius: 3px; background: #f6f8fb; }
+.macbook-screen::after { background: linear-gradient(110deg,#ffffff10,transparent 22%,transparent 70%,#8096af08); }
+.macbook-hinge { width: 85%; height: 5px; background: linear-gradient(#07080a,#262b31 60%,#090b0e); }
+.macbook-deck { height: clamp(115px,19vw,205px); padding: clamp(6px,.8vw,10px) 11% 7px; background: linear-gradient(145deg,#3b424c 0%,#4b525d 35%,#323842 82%,#181c22 100%); box-shadow: inset 0 3px 3px #a6abb538; transform: perspective(950px) rotateX(47deg); clip-path: polygon(7.3% 0,92.7% 0,100% 100%,0 100%); }
+.macbook-deck::before,.macbook-deck::after { content: ''; position: absolute; top: 14%; width: 7%; height: 51%; background: repeating-linear-gradient(90deg,#14171b 0 1px,#49515b 1px 3px); opacity: .68; border-radius: 3px; }
+.macbook-deck::before { left: 4%; }.macbook-deck::after { right: 4%; }
+.macbook-keyboard { background: #171b20; border: 1px solid #59616d; padding: 3px; gap: clamp(2px,.35vw,4px); box-shadow: inset 0 0 4px #0009; }
+.macbook-key-row { gap: clamp(2px,.35vw,4px); }
+.macbook-key { height: clamp(10px,1.55vw,19px); background: linear-gradient(#191c21,#090a0d); color: #9299a4; box-shadow: inset 0 1px 1px #5c626b80,0 1px 1px #070809; }
+.macbook-trackpad { width: 36%; height: 34%; margin-top: clamp(5px,.65vw,9px); border-color: #161b22; background: linear-gradient(#48505b,#424954); box-shadow: inset 0 1px 2px #15191f77,0 1px 0 #7a828b40; }
+.macbook-caption { margin-top: -11px; color: #a5adba; }
+.product-scroll { margin-top: 19px; }
+.device-app { height: 100%; overflow: hidden; background: #f5f7fb; color: #1b2738; font-family: Arial,Helvetica,sans-serif; text-align: left; }
+.device-app-topbar { display: flex; justify-content: space-between; align-items: center; height: 10%; min-height: 27px; padding: 0 2.1%; background: #fff; border-bottom: 1px solid #e4e8ef; }
+.device-app-brand { display: flex; align-items: center; gap: 6px; color: #172941; font-weight: 800; font-size: clamp(8px,1.25vw,14px); letter-spacing: .13em; }
+.device-app-brand svg { color: #24466d; }
+.device-app-topbar-right { display: flex; align-items: center; gap: 6px; color: #7d8898; font-size: clamp(6px,.8vw,9px); }
+.device-app-status-dot { width: 5px; height: 5px; border-radius: 50%; background: #3ba77f; }
+.device-app-avatar { display: grid; place-items: center; width: clamp(13px,1.7vw,20px); height: clamp(13px,1.7vw,20px); margin-left: 5px; border-radius: 50%; background: #e8edf4; color: #345173; font-size: 8px; font-weight: 800; }
+.device-app-body { display: flex; height: 90%; }
+.device-app-sidebar { display: flex; flex-direction: column; gap: 3px; width: 20%; padding: 3% 1.2%; border-right: 1px solid #e5eaf1; background: #fff; }
+.device-app-sidebar-label,.device-app-sidebar-bottom { display: block; padding: 0 9%; margin-bottom: 5px; color: #9aa4b3; font-size: clamp(5px,.62vw,7px); font-weight: 800; letter-spacing: .13em; }
+.device-app-sidebar button { width: 100%; padding: 8% 9%; border-radius: 5px; text-align: left; color: #657185; font-size: clamp(7px,.95vw,11px); font-weight: 600; cursor: pointer; }
+.device-app-sidebar button:hover,.device-app-sidebar button.active { background: #eaf0f7; color: #1f436b; }
+.device-app-sidebar-bottom { margin-top: auto; margin-bottom: 0; }
+.device-app-content { flex: 1; min-width: 0; padding: 3.2% 3.7%; }
+.device-app-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 3.5%; }
+.device-app-overline { color: #6483a9; font-size: clamp(5px,.65vw,8px); font-weight: 800; letter-spacing: .16em; }
+.device-app-heading h2 { margin: 5px 0 3px; color: #1b2738; font-size: clamp(13px,2vw,25px); line-height: 1.1; font-weight: 760; letter-spacing: -.045em; }
+.device-app-heading p { color: #758195; font-size: clamp(6px,.85vw,10px); }
+.device-app-heading a { display: inline-flex; align-items: center; gap: 4px; flex: none; padding: 6px 9px; border-radius: 5px; background: #233f63; color: #fff; font-size: clamp(6px,.7vw,9px); font-weight: 700; }
+.device-app-preview-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.8%; }
+.device-app-stat { min-width: 0; padding: 10% 10% 9%; border: 1px solid #e4e9f0; border-radius: 7px; background: #fff; }
+.device-app-stat span,.device-app-stat small { display: block; color: #798699; font-size: clamp(6px,.75vw,9px); }
+.device-app-stat strong { display: block; margin: 6% 0 2%; font-size: clamp(15px,2.4vw,30px); line-height: 1; letter-spacing: -.04em; }
+.device-app-stat-alert strong { color: #ad5363; }
+.device-app-record { grid-column: 1/-1; display: flex; align-items: center; justify-content: space-between; padding: 2.3%; margin-top: 1.5%; border: 1px solid #e4e9f0; border-radius: 7px; background: #fff; }
+.device-app-record > div { display: flex; align-items: center; gap: 9px; }.device-app-record-icon { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 5px; background: #eaf0f8; color: #416b9a; }.device-app-record strong,.device-app-record small { display: block; font-size: clamp(6px,.8vw,10px); }.device-app-record small { margin-top: 2px; color: #8792a1; }.device-app-badge { padding: 4px 6px; border-radius: 4px; background: #e7f5ee; color: #297a56; font-size: clamp(5px,.6vw,7px); font-weight: 800; }
+.device-app-evidence { display: flex; align-items: center; gap: 4%; height: 59%; }.device-app-document,.device-app-claim { width: 46%; height: 100%; padding: 4%; border: 1px solid #dfe5ec; border-radius: 6px; background: #fff; box-shadow: 0 5px 15px #1f355015; }.device-app-document > span,.device-app-claim > span { display: block; color: #657b9c; font-size: clamp(5px,.65vw,8px); font-weight: 800; letter-spacing: .08em; }.device-app-doc-line { height: 3px; width: 94%; margin-top: 8%; border-radius: 4px; background: #e7ebf0; }.device-app-doc-line.short { width: 53%; }.device-app-doc-line.medium { width: 74%; }.device-app-highlight { margin-top: 9%; padding: 5%; border-left: 2px solid #4a79ac; background: #e8f1fb; font-size: clamp(6px,.85vw,10px); font-weight: 700; white-space: nowrap; }.device-app-linkline { width: 4%; height: 2px; background: #7ca1c5; }.device-app-claim strong { display: block; margin-top: 13%; font-size: clamp(10px,1.6vw,19px); }.device-app-claim small,.device-app-claim em { display: block; margin-top: 4%; color: #6b7889; font-size: clamp(6px,.8vw,9px); font-style: normal; }.device-app-claim em { margin-top: 13%; color: #287b5b; font-weight: 700; }
+.device-app-review { padding: 3.5%; border: 1px solid #e6e9ef; border-radius: 7px; background: #fff; }.device-app-review-title { display: flex; align-items: center; gap: 7px; color: #9a4654; font-size: clamp(8px,1.1vw,13px); font-weight: 700; }.device-app-review-title small { margin-left: auto; color: #8b95a3; font-size: clamp(6px,.7vw,9px); }.device-app-review-sources { display: grid; grid-template-columns: 1fr 1fr; gap: 3%; margin: 5% 0 3%; }.device-app-review-sources > div { padding: 7%; border: 1px solid #ebedf1; border-radius: 5px; background: #f8f9fb; }.device-app-review-sources span,.device-app-review-sources strong { display: block; }.device-app-review-sources span { color: #8a94a1; font-size: clamp(6px,.7vw,8px); }.device-app-review-sources strong { margin-top: 7%; font-size: clamp(9px,1.4vw,16px); }.device-app-review p { color: #748093; font-size: clamp(6px,.8vw,10px); }
+@media (max-width: 700px) { .product-hero { padding: 65px 15px 45px; }.product-hero h1 { font-size: clamp(43px,10vw,60px); }.macbook-stage { margin-top: 38px; }.macbook-display { width: 96%; padding: 5px 5px 7px; border-radius: 10px 10px 3px 3px; }.macbook-deck { height: 95px; }.macbook-caption { margin-top: -6px; }.device-app-sidebar button { padding: 6% 7%; }.device-app-heading a { padding: 4px; }.device-app-record { display: none; } }
+@media (min-width: 701px) {
+  .product-hero { padding-top: 42px; }
+  .product-hero h1 { font-size: clamp(52px,6.1vw,74px); }
+  .product-actions { margin-top: 19px; }
+  .product-trust { margin-top: 16px; }
+  .macbook-stage { max-width: 830px; margin-top: 30px; }
+  .macbook-deck { height: clamp(115px,18vw,165px); }
+}
+@media (min-width: 701px) and (max-height: 1050px) {
+  .macbook-stage { max-width: 750px; }
+  .macbook-deck { height: 134px; }
+}
+
+/* Cinematic product sequence: lid, camera, screen, then a slow studio light. */
+.macbook-stage { transform-style: preserve-3d; }
+.macbook-device { animation: product-camera 3.3s cubic-bezier(.18,.7,.2,1) both; transform-style: preserve-3d; }
+.macbook-display { transform-origin: center bottom; animation: product-lid 3.3s cubic-bezier(.18,.7,.2,1) both; backface-visibility: hidden; }
+.macbook-screen .device-app { animation: product-screen-on 2.5s ease-out both; animation-delay: .75s; }
+.macbook-deck { animation: product-deck-arrive 3.3s cubic-bezier(.18,.7,.2,1) both; }
+.macbook-glow { animation: product-glow 3.6s ease-out both; }
+.macbook-screen::before { position: absolute; z-index: 3; content: ''; top: -25%; bottom: -25%; left: -55%; width: 35%; transform: skewX(-23deg); background: linear-gradient(90deg,transparent,#ffffff0c,#ffffff22,#ffffff0b,transparent); pointer-events: none; animation: product-light-sweep 2.8s ease-in-out 2s both; }
+.device-app-content { animation: product-view-change .48s ease-out both; }
+.macbook-controls { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: -8px; color: #a5adba; font-size: 11px; }
+.macbook-controls button,.macbook-controls a { display: inline-flex; align-items: center; gap: 5px; }
+.macbook-controls button { padding: 7px 10px; border: 1px solid #515c6e; border-radius: 999px; color: #e5ecf7; cursor: pointer; }
+.macbook-controls button:hover { background: #1b2839; }
+.macbook-controls a { color: #d6e6ff; text-decoration: underline; text-underline-offset: 3px; }
+@keyframes product-camera { 0% { opacity: .75; transform: translateY(90px) scale(.79) rotateY(-13deg) rotateX(10deg); } 43% { opacity: 1; transform: translateY(26px) scale(.94) rotateY(-4deg) rotateX(3deg); } 100% { opacity: 1; transform: translateY(0) scale(1) rotateY(0) rotateX(0); } }
+@keyframes product-lid { 0% { transform: perspective(1000px) rotateX(-76deg); filter: brightness(.35); } 35% { transform: perspective(1000px) rotateX(-53deg); filter: brightness(.5); } 76% { transform: perspective(1000px) rotateX(3deg); filter: brightness(1.1); } 100% { transform: perspective(1000px) rotateX(0); filter: brightness(1); } }
+@keyframes product-screen-on { 0%,32% { opacity: 0; filter: brightness(.15) blur(12px); } 70% { opacity: .85; filter: brightness(1.3) blur(2px); } 100% { opacity: 1; filter: brightness(1) blur(0); } }
+@keyframes product-deck-arrive { 0% { opacity: .6; filter: brightness(.3); } 50% { opacity: 1; filter: brightness(.7); } 100% { opacity: 1; filter: brightness(1); } }
+@keyframes product-glow { 0% { opacity: 0; transform: scale(.7); } 65% { opacity: .85; transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes product-light-sweep { 0% { left: -55%; opacity: 0; } 20% { opacity: 1; } 100% { left: 140%; opacity: 0; } }
+@keyframes product-view-change { from { opacity: .35; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 700px) { .macbook-controls { flex-wrap: wrap; gap: 7px; margin-top: 0; font-size: 10px; } }
+@media (prefers-reduced-motion: reduce) { .macbook-device,.macbook-display,.macbook-screen .device-app,.macbook-deck,.macbook-glow,.macbook-screen::before,.device-app-content { animation: none !important; } }
+.macbook-controls { animation: product-controls-appear .55s ease-out 2.9s both; }
+@keyframes product-controls-appear { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .macbook-controls { animation: none; } }
+
+/* Photographic device layer. The live preview sits within the rendered screen. */
+.macbook-stage { width: min(700px,calc((100svh - 475px)*1.5),94vw); max-width: none; margin-top: 24px; }
+.macbook-photo-device { position: relative; width: 100%; aspect-ratio: 3 / 2; transform-origin: 50% 70%; transform-style: preserve-3d; filter: drop-shadow(0 28px 22px #0008); animation: photo-orbit 4s cubic-bezier(.19,.66,.18,1) both, photo-idle 9s ease-in-out 4s infinite; }
+.macbook-photo { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; user-select: none; }
+.macbook-photo-screen { position: absolute; z-index: 2; left: 15%; top: 4.9%; width: 70%; height: 61.1%; overflow: hidden; border-radius: 2px; background: #f5f7fb; box-shadow: inset 0 0 0 1px #07090d; }
+.macbook-photo-screen::after { content: ''; position: absolute; z-index: 4; top: 0; left: 45.5%; width: 9%; height: 3.5%; border-radius: 0 0 8px 8px; background: #050607; pointer-events: none; }
+.macbook-photo-screen .device-app { animation: photo-screen-on 2.5s ease-out .9s both; }
+.macbook-controls { margin-top: -2px; animation: product-controls-appear .55s ease-out 3.4s both; }
+.product-scroll { margin-top: 9px; }
+@keyframes photo-orbit { 0% { opacity: .5; transform: perspective(1100px) translateY(42px) rotateY(-24deg) rotateX(7deg) scale(.87); } 37% { opacity: 1; transform: perspective(1100px) translateY(9px) rotateY(10deg) rotateX(2deg) scale(.96); } 68% { transform: perspective(1100px) translateY(0) rotateY(-5deg) rotateX(0) scale(1); } 100% { transform: perspective(1100px) translateY(0) rotateY(0) rotateX(0) scale(1); } }
+@keyframes photo-idle { 0%,100% { transform: perspective(1100px) translateY(0) rotateY(0); } 50% { transform: perspective(1100px) translateY(-6px) rotateY(3deg); } }
+@keyframes photo-screen-on { 0%,25% { opacity: 0; filter: brightness(.15) blur(10px); } 100% { opacity: 1; filter: brightness(1) blur(0); } }
+@media (max-width: 700px) { .macbook-stage { width: 94vw; margin-top: 22px; }.macbook-photo-screen .device-app-topbar { min-height: 0; }.macbook-photo-screen .device-app-record { display: none; }.macbook-controls { margin-top: 2px; } }
+@media (prefers-reduced-motion: reduce) { .macbook-photo-device,.macbook-photo-screen .device-app { animation: none !important; } }
+
+/* Responsive workspace sizing, including full-height graph and document viewers. */
+.workspace-shell,.workspace-main,.workspace-shell main > div { min-width: 0; }
+.workspace-shell main > .evidence-page,.workspace-shell main > .document-detail-page { max-width: none; width: 100%; }
+.evidence-page,.document-detail-page { height: calc(100dvh - 68px); min-height: 580px; overflow: hidden; }
+.evidence-layout,.document-detail-layout { min-height: 0; overflow: hidden; }
+.evidence-canvas { min-width: 0; min-height: 0; overscroll-behavior: contain; }
+.evidence-inspector { min-height: 0; }
+.evidence-pan-hint { display: none; }
+.document-detail-toolbar > div:first-child { min-width: 0; }
+.document-detail-toolbar > div:first-child > div { min-width: 0; }
+.document-detail-toolbar span { overflow-wrap: anywhere; }
+@media (max-width: 1023px) {
+  .evidence-page,.document-detail-page { height: auto; min-height: calc(100dvh - 68px); overflow: visible; }
+  .evidence-layout,.document-detail-layout { overflow: visible; }
+  .evidence-canvas { flex: none; height: min(62dvh,570px); min-height: 390px; }
+  .evidence-inspector { max-height: none; overflow: visible; }
+  .document-detail-layout > div:first-child { min-height: 570px; }
+  .document-detail-layout > div:last-child { min-height: 360px; max-height: none; }
+  .document-detail-toolbar { flex-wrap: wrap; }
+  .evidence-pan-hint { display: block; position: sticky; left: 0; width: max-content; max-width: 100%; margin-bottom: 10px; padding: 6px 9px; border: 1px solid #cbd9e8; border-radius: 6px; background: #ffffffed; color: #536884; font-size: 11px; }
+}
+@media (max-width: 700px) {
+  .evidence-toolbar { padding: 14px; }
+  .evidence-filters { flex-wrap: nowrap; width: 100%; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+  .evidence-filters button { flex: none; }
+  .evidence-canvas { height: 54dvh; min-height: 355px; }
+  .evidence-inspector { padding: 18px; }
+  .document-detail-toolbar { padding: 12px; }
+  .document-detail-toolbar > div:last-child { width: 100%; flex-wrap: wrap; }
+  .document-detail-layout > div:first-child { min-height: 520px; }
+  .workspace-shell table { min-width: 680px; }
+  .workspace-shell [class*='max-w-7xl'],.workspace-shell [class*='max-w-6xl'],.workspace-shell [class*='max-w-5xl'] { max-width: 100%; }
+}
+/* Scale the larger rendered laptop to available screen height, keeping its lower edge visible. */
+@media (min-width: 701px) {
+  .product-hero { padding-top: 25px; }
+  .product-trust { margin-top: 12px; }
+  .macbook-stage { width: min(900px,calc((100svh - 425px)*1.5),94vw); margin-top: 18px; }
+}
+@media (max-width: 700px) { .macbook-stage { width: min(98vw,650px); } }
+@media (min-width: 1200px) {
+  .product-hero { display: grid; grid-template-columns: minmax(340px,.78fr) minmax(0,1.22fr); align-items: center; gap: clamp(28px,4vw,68px); min-height: calc(100svh - 66px); padding: 45px clamp(38px,5.5vw,100px); }
+  .product-hero-copy { max-width: 540px; margin: 0; text-align: left; }
+  .product-hero h1 { font-size: clamp(63px,5.2vw,84px); }
+  .product-hero-copy > p { margin: 0; }
+  .product-actions,.product-trust { justify-content: flex-start; }
+  .macbook-stage { width: 100%; max-width: 900px; margin: 0; }
+  .product-scroll { position: absolute; bottom: 19px; left: 50%; }
+}
+@media (max-width: 700px) {
+  .document-canvas-toolbar > div { max-width: 100%; }
+  .document-canvas-toolbar > div:last-child { overflow-x: auto; }
+}
