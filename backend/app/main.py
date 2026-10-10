@@ -13,8 +13,8 @@ app = FastAPI(
 
 @app.middleware("http")
 async def public_demo_guard(request: Request, call_next):
-    # The public deployment has no authentication or durable storage. Keep it
-    # read-only except for advisor generation on seeded, synthetic documents.
+    # The public deployment has no authentication or durable storage. Allow only
+    # ephemeral uploads and advisor generation on seeded, synthetic documents.
     if os.getenv("VERCEL") == "1" and request.method not in {"GET", "HEAD", "OPTIONS"}:
         path = request.url.path
         seeded_advisor = request.method == "POST" and path in {

@@ -6,7 +6,7 @@
 
 [Open VERITAS](https://veritas-alpha-ecru.vercel.app). The frontend and API are deployed together on Vercel and are publicly accessible.
 
-The hosted deployment uses seeded demo records. Upload and state-changing API operations are disabled there. To run the full interactive prototype locally, follow the setup instructions below.
+The hosted deployment includes a judge upload mode for non-sensitive PDF and image files up to 10 MB. Uploaded bytes are validated, hashed, and discarded; generated demo results are kept only in that browser session. Other state-changing operations remain disabled. To run the full interactive prototype locally, follow the setup instructions below.
 
 ## Prototype Scope
 
