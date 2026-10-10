@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   UploadCloud, 
   CheckCircle2, 
@@ -110,6 +111,18 @@ export default function UploadPage() {
       setIsProcessing(false);
     }
   };
+
+  if (process.env.NEXT_PUBLIC_PUBLIC_DEMO === 'true') {
+    return <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12 text-slate-100">
+      <p className="text-xs font-semibold uppercase tracking-widest text-sky-400">Public demo</p>
+      <h1 className="mt-3 text-3xl font-semibold">Explore sample records</h1>
+      <p className="mt-4 max-w-2xl text-slate-300">This public site uses synthetic records. Uploads are disabled because this demo has no user accounts or private storage. Run the project locally to analyze your own document.</p>
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <Link href="/documents/doc-1" className="rounded-xl border border-slate-700 bg-slate-900 p-5 hover:border-sky-500"><strong>Land ownership certificate</strong><span className="mt-2 block text-sm text-slate-400">Inspect evidence, claims, and Expert Review.</span></Link>
+        <Link href="/documents/doc-3" className="rounded-xl border border-slate-700 bg-slate-900 p-5 hover:border-sky-500"><strong>Mutation extract</strong><span className="mt-2 block text-sm text-slate-400">Explore a cross-record conflict.</span></Link>
+      </div>
+    </main>;
+  }
 
   return (
     <div className="flex-1 bg-[#070b14] py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full space-y-8">
