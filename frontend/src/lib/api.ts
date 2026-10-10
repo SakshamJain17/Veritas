@@ -16,12 +16,51 @@ function readSessionDocument(id: string): { document: Document; claims: Claim[] 
   }
 }
 
-function saveSessionDocument(value: { document: Document; claims: Claim[] }) {
-  if (typeof window === 'undefined') return;
+function readSessionDocuments(): { document: Document; claims: Claim[] }[] {
+  if (typeof window === 'undefined') return [];
+  const values: { document: Document; claims: Claim[] }[] = [];
   try {
-    window.sessionStorage.setItem(`${SESSION_DOCUMENT_PREFIX}${value.document.id}`, JSON.stringify(value));
+    for (let index = 0; index < window.sessionStorage.length; index += 1) {
+      const key = window.sessionStorage.key(index);
+      if (!key?.startsWith(SESSION_DOCUMENT_PREFIX)) continue;
+      const stored = window.sessionStorage.getItem(key);
+      if (stored) values.push(JSON.parse(stored));
+    }
+  } catch {
+    return [];
+  }
+  return values;
+}
+
+function saveSessionDocument(value: { document: Document; claims: Claim[] }): { document: Document; claims: Claim[] } {
+  if (typeof window === 'undefined') return value;
+  try {
+    const records = [...readSessionDocuments().filter(item => item.document.id !== value.document.id), value];
+    const groups = new Map<string, Claim[]>();
+    for (const record of records) {
+      for (const claim of record.claims) {
+        const key = `${claim.subject.trim().toLowerCase()}::${claim.predicate}`;
+        groups.set(key, [...(groups.get(key) || []), claim]);
+      }
+    }
+    for (const record of records) {
+      record.claims = record.claims.map(claim => {
+        const key = `${claim.subject.trim().toLowerCase()}::${claim.predicate}`;
+        const peers = groups.get(key) || [];
+        const hasConflict = new Set(peers.map(item => (item.normalizedValue || item.object).trim().toLowerCase())).size > 1;
+        return { ...claim, hasConflict, conflictId: hasConflict ? `session-${claim.subject.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${claim.predicate}` : null };
+      });
+      record.document = {
+        ...record.document,
+        claimsCount: record.claims.length,
+        status: record.claims.some(claim => claim.hasConflict) ? 'CONFLICT_DETECTED' : record.document.status,
+      };
+      window.sessionStorage.setItem(`${SESSION_DOCUMENT_PREFIX}${record.document.id}`, JSON.stringify(record));
+    }
+    return records.find(item => item.document.id === value.document.id) || value;
   } catch {
     // The API result still renders on the completion screen if browser storage is unavailable.
+    return value;
   }
 }
 
@@ -98,7 +137,9 @@ export const api = {
   },
   // Documents
   async getDocuments(): Promise<Document[]> {
-    return safeFetch<Document[]>('/api/documents', {}, INITIAL_DOCUMENTS);
+    const remote = await safeFetch<Document[]>('/api/documents', {}, INITIAL_DOCUMENTS);
+    const session = readSessionDocuments().map(item => item.document);
+    return [...session, ...remote.filter(doc => !session.some(item => item.id === doc.id))];
   },
 
   async getDocument(id: string): Promise<{ document: Document; claims: Claim[] }> {
@@ -122,8 +163,7 @@ export const api = {
       result.document.fileAccess = 'BROWSER_SESSION';
       result.document.mimeType = selected.type;
     }
-    saveSessionDocument(result);
-    return result;
+    return saveSessionDocument(result);
   },
 
   async anchorDocument(id: string): Promise<{ document: Document; anchor: BlockchainAnchor }> {
@@ -154,7 +194,16 @@ export const api = {
       if (params.query) q.set('query', params.query);
       queryStr = `?${q.toString()}`;
     }
-    return safeFetch<Claim[]>(`/api/claims${queryStr}`, {}, INITIAL_CLAIMS);
+    const remote = await safeFetch<Claim[]>(`/api/claims${queryStr}`, {}, INITIAL_CLAIMS);
+    let session = readSessionDocuments().flatMap(item => item.claims);
+    if (params?.document_id) session = session.filter(claim => claim.sourceDocumentId === params.document_id);
+    if (params?.status) session = session.filter(claim => claim.verificationStatus === params.status);
+    if (params?.has_conflict !== undefined) session = session.filter(claim => claim.hasConflict === params.has_conflict);
+    if (params?.query) {
+      const term = params.query.toLowerCase();
+      session = session.filter(claim => `${claim.subject} ${claim.predicate} ${claim.object}`.toLowerCase().includes(term));
+    }
+    return [...session, ...remote.filter(claim => !session.some(item => item.id === claim.id))];
   },
 
   async getClaim(id: string): Promise<{ claim: Claim; document: Document; relatedClaims: Claim[]; conflict?: Contradiction | null }> {
