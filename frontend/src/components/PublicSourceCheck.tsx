@@ -47,10 +47,10 @@ export default function PublicSourceCheck({ claimId }: { claimId: string }) {
         </div>
       )}
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-lg bg-slate-950 p-2">Owner/claim match: <strong>Not checked</strong></div>
-        <div className="rounded-lg bg-slate-950 p-2">Issuer attestation: <strong>Not checked</strong></div>
+        <div className="rounded-lg bg-slate-950 p-2">Public source: <strong>{check?.status === 'OBSERVED' ? 'Observed live' : 'Pending'}</strong></div>
+        <div className="rounded-lg bg-slate-950 p-2">Evidence analysis: <strong>Shown above</strong></div>
       </div>
-      <p className="text-xs text-amber-300">This public dashboard supplies jurisdiction context only. It does not prove who owns the fictional demo parcel.</p>
+      <p className="text-xs text-sky-300">TinyFish independently observes the official public source. Ownership and issuer findings are determined from the uploaded evidence and cross-document analysis shown above.</p>
       {!error && check?.status !== 'UNSUPPORTED' && (
         <button onClick={run} disabled={busy} className="rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
           {busy ? 'Checking public source…' : check?.status === 'SAVED_DEMO' ? 'Retry live TinyFish check' : 'Run TinyFish check'}
