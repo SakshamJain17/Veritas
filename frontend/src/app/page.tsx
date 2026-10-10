@@ -59,7 +59,7 @@ export default function LandingPage() {
           <div className="macbook-stage" key={motionKey}>
             <div className="macbook-glow" aria-hidden="true" />
             <div className="macbook-device macbook-photo-device">
-              <Image src="/macbook-pro-render.png" alt="Space black laptop showing VERITAS" fill priority sizes="(max-width: 700px) 94vw, 700px" className="macbook-photo" />
+              <Image src="/macbook-pro-render.png" alt="Space black laptop showing VERITAS" fill priority unoptimized sizes="(max-width: 700px) 94vw, 900px" className="macbook-photo" />
               <div className="macbook-photo-screen">
                   <div className="device-app" aria-label="VERITAS interactive product preview">
                     <div className="device-app-topbar"><span className="device-app-brand"><ShieldCheck size={15} /> VERITAS</span><span className="device-app-topbar-right"><span className="device-app-status-dot" /> Workspace preview <span className="device-app-avatar">V</span></span></div>
