@@ -2,6 +2,26 @@ import { Document, Claim, Contradiction, Issuer, AuditEvent, PublicVerificationP
 import { INITIAL_DOCUMENTS, INITIAL_CLAIMS, INITIAL_CONTRADICTIONS, INITIAL_ISSUERS } from './mockData';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8000');
+const SESSION_DOCUMENT_PREFIX = 'veritas:demo-document:';
+
+function readSessionDocument(id: string): { document: Document; claims: Claim[] } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const value = window.sessionStorage.getItem(`${SESSION_DOCUMENT_PREFIX}${id}`);
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSessionDocument(value: { document: Document; claims: Claim[] }) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(`${SESSION_DOCUMENT_PREFIX}${value.document.id}`, JSON.stringify(value));
+  } catch {
+    // The API result still renders on the completion screen if browser storage is unavailable.
+  }
+}
 
 async function safeFetch<T>(endpoint: string, options?: RequestInit, fallback?: T): Promise<T> {
   try {
@@ -45,6 +65,8 @@ export const api = {
   },
 
   async getDocument(id: string): Promise<{ document: Document; claims: Claim[] }> {
+    const sessionDocument = readSessionDocument(id);
+    if (sessionDocument) return sessionDocument;
     const fallbackDoc = INITIAL_DOCUMENTS.find(d => d.id === id) || INITIAL_DOCUMENTS[0];
     const fallbackClaims = INITIAL_CLAIMS.filter(c => c.sourceDocumentId === fallbackDoc.id);
     return safeFetch<{ document: Document; claims: Claim[] }>(
@@ -55,13 +77,15 @@ export const api = {
   },
 
   async uploadDocument(formData: FormData): Promise<{ document: Document; claims: Claim[] }> {
-    return safeFetch<{ document: Document; claims: Claim[] }>(
+    const result = await safeFetch<{ document: Document; claims: Claim[] }>(
       '/api/documents/upload',
       {
         method: 'POST',
         body: formData
       }
     );
+    saveSessionDocument(result);
+    return result;
   },
 
   async anchorDocument(id: string): Promise<{ document: Document; anchor: BlockchainAnchor }> {

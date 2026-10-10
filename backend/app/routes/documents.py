@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+import os
 from typing import Optional
 from app.data import db
 from app.services.extractor import process_uploaded_document
@@ -28,9 +29,10 @@ async def upload_document(
     advisorConsent: bool = Form(False),
     file: Optional[UploadFile] = File(None)
 ):
-    content = await file.read(25 * 1024 * 1024 + 1) if file else b""
-    if len(content) > 25 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Document exceeds the 25 MB upload limit")
+    max_upload_mb = 10 if os.getenv("VERCEL") == "1" else 25
+    content = await file.read(max_upload_mb * 1024 * 1024 + 1) if file else b""
+    if len(content) > max_upload_mb * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"Document exceeds the {max_upload_mb} MB upload limit")
     if file and content:
         signatures = {
             "application/pdf": content.startswith(b"%PDF-"),

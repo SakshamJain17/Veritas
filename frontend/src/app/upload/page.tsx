@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { 
   UploadCloud, 
   CheckCircle2, 
@@ -29,6 +28,7 @@ const PIPELINE_STEPS = [
 
 export default function UploadPage() {
   const router = useRouter();
+  const isPublicDemo = process.env.NEXT_PUBLIC_PUBLIC_DEMO === 'true';
 
   // Form state
   const [title, setTitle] = useState('');
@@ -65,9 +65,14 @@ export default function UploadPage() {
   const handleStartUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title) return;
+    if (isPublicDemo && !selectedFile) {
+      setUploadError('Choose a PDF or image to run the judge demo.');
+      return;
+    }
     setUploadError(null);
-    if (selectedFile && selectedFile.size > 25 * 1024 * 1024) {
-      setUploadError('This file is larger than the 25 MB limit. Choose a smaller document.');
+    const maxUploadMb = isPublicDemo ? 10 : 25;
+    if (selectedFile && selectedFile.size > maxUploadMb * 1024 * 1024) {
+      setUploadError(`This file is larger than the ${maxUploadMb} MB limit. Choose a smaller document.`);
       return;
     }
     if (selectedFile && !['application/pdf', 'image/png', 'image/jpeg', 'image/tiff'].includes(selectedFile.type)) {
@@ -112,22 +117,13 @@ export default function UploadPage() {
     }
   };
 
-  if (process.env.NEXT_PUBLIC_PUBLIC_DEMO === 'true') {
-    return <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12 text-slate-100">
-      <p className="text-xs font-semibold uppercase tracking-widest text-sky-400">Public demo</p>
-      <h1 className="mt-3 text-3xl font-semibold">Explore sample records</h1>
-      <p className="mt-4 max-w-2xl text-slate-300">This public site uses synthetic records. Uploads are disabled because this demo has no user accounts or private storage. Run the project locally to analyze your own document.</p>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <Link href="/documents/doc-1" className="rounded-xl border border-slate-700 bg-slate-900 p-5 hover:border-sky-500"><strong>Land ownership certificate</strong><span className="mt-2 block text-sm text-slate-400">Inspect evidence, claims, and Expert Review.</span></Link>
-        <Link href="/documents/doc-3" className="rounded-xl border border-slate-700 bg-slate-900 p-5 hover:border-sky-500"><strong>Mutation extract</strong><span className="mt-2 block text-sm text-slate-400">Explore a cross-record conflict.</span></Link>
-      </div>
-    </main>;
-  }
-
   return (
     <div className="flex-1 bg-[#070b14] py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full space-y-8">
       {/* Header */}
       <div>
+        {isPublicDemo && <div className="mb-5 rounded-xl border border-sky-700/60 bg-sky-950/40 p-4 text-sm text-sky-100">
+          <strong>Judge demo mode:</strong> choose a non-sensitive PDF or image. VERITAS validates and hashes the file, discards its bytes, and keeps the generated demo result only in this browser session. Claim extraction and evidence regions are deterministic prototype outputs, not OCR results.
+        </div>}
         <div className="flex items-center space-x-2 text-xs font-mono text-sky-400 mb-1">
           <span>DOCUMENT ANALYSIS WORKFLOW</span>
           <span>•</span>
@@ -207,9 +203,10 @@ export default function UploadPage() {
                 if (e.target.files && e.target.files[0]) {
                   const file = e.target.files[0];
                   setUploadError(null);
-                  if (file.size > 25 * 1024 * 1024) {
+                  const maxUploadMb = isPublicDemo ? 10 : 25;
+                  if (file.size > maxUploadMb * 1024 * 1024) {
                     setSelectedFile(null);
-                    setUploadError('This file is larger than the 25 MB limit. Choose a smaller document.');
+                    setUploadError(`This file is larger than the ${maxUploadMb} MB limit. Choose a smaller document.`);
                     return;
                   }
                   if (!['application/pdf', 'image/png', 'image/jpeg', 'image/tiff'].includes(file.type)) {
@@ -234,7 +231,7 @@ export default function UploadPage() {
                   {selectedFile ? selectedFile.name : 'Click to upload or drag and drop public record'}
                 </p>
                 <p className="text-xs text-slate-400">
-                  PDF, JPG, PNG, TIFF up to 25MB (scanned deeds, certificates, licenses)
+                  PDF, JPG, PNG, TIFF up to {isPublicDemo ? 10 : 25}MB (scanned deeds, certificates, licenses)
                 </p>
               </div>
             </div>
@@ -298,7 +295,7 @@ export default function UploadPage() {
 
           <label className="flex items-start gap-3 rounded-xl border border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-200 cursor-pointer">
             <input type="checkbox" checked={advisorConsent} onChange={e => setAdvisorConsent(e.target.checked)} className="mt-1 accent-sky-500" />
-            <span>Allow AI expert review — document text excerpts are sent to the AI provider <span className="block mt-1 text-xs text-slate-400">Optional. You can upload without enabling expert review.</span></span>
+            <span>Allow Expert Review for this record <span className="block mt-1 text-xs text-slate-400">Optional. This prototype uses its rule-based advisor; no language-model provider is currently configured.</span></span>
           </label>
           {/* Submit button */}
           <button
@@ -386,7 +383,7 @@ export default function UploadPage() {
             </div>
           )}
 
-          {advisorConsent && <button onClick={() => router.push(`/documents/${completedDocId}/advisor`)} className="w-full rounded-xl border border-sky-500 px-4 py-3 text-sm font-semibold text-sky-300">Open Expert Review →</button>}
+          {advisorConsent && !isPublicDemo && <button onClick={() => router.push(`/documents/${completedDocId}/advisor`)} className="w-full rounded-xl border border-sky-500 px-4 py-3 text-sm font-semibold text-sky-300">Open Expert Review →</button>}
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <button
               onClick={() => router.push(`/documents/${completedDocId}`)}
