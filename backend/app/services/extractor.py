@@ -45,6 +45,34 @@ PATTERNS = [
     ("beneficiaryName", "Beneficiary", re.compile(r"(?:beneficiary|licensee)(?:\s+name)?" + SEPARATOR + r"([^\n,;]{2,100})", re.I)),
 ]
 
+BLOCK_FIELDS = {
+    "RECORDED HOLDER": ("ownedBy", "Recorded holder"),
+    "REGISTERED HOLDER": ("ownedBy", "Registered holder"),
+    "PARCEL / SURVEY NUMBER": ("parcelNumber", "Parcel / survey number"),
+    "PARCEL IDENTIFIER": ("parcelNumber", "Parcel identifier"),
+    "REGISTERED AREA": ("registeredArea", "Registered area"),
+    "MEASURED AREA": ("registeredArea", "Measured area"),
+    "LAND CLASSIFICATION": ("landClassification", "Land classification"),
+    "LAND CATEGORY": ("landClassification", "Land category"),
+    "VILLAGE": ("village", "Village"),
+    "RECORD DATE": ("recordDate", "Record date"),
+    "RECORD SNAPSHOT DATE": ("recordDate", "Record snapshot date"),
+    "SURVEY DATE": ("surveyDate", "Survey date"),
+    "ENTRY / MUTATION REFERENCE": ("mutationReference", "Entry / mutation reference"),
+    "PARENT / GUARDIAN": ("guardianName", "Parent / guardian"),
+    "LICENCE HOLDER": ("licensedTo", "Licence holder"),
+    "BUSINESS NAME": ("businessName", "Business name"),
+    "LICENCE NUMBER": ("licenceNumber", "Licence number"),
+    "ISSUE DATE": ("issueDate", "Issue date"),
+    "VALID THROUGH": ("validThrough", "Valid through"),
+    "GRADUATE NAME": ("awardedTo", "Graduate name"),
+    "QUALIFICATION": ("qualification", "Qualification"),
+    "CERTIFICATE NUMBER": ("certificateNumber", "Certificate number"),
+    "AWARD DATE": ("awardDate", "Award date"),
+    "REGISTRAR": ("registrar", "Registrar"),
+    "JURISDICTION": ("jurisdiction", "Jurisdiction"),
+}
+
 KNOWN_SCANNED_FIXTURES = {
     "99932197a3107347e9888f495e9c2faac8d2906d7a1fe6feb59a2b7478ad98cd": """RECORD REFERENCE: DEMO-LR-B-2024-01843
 JURISDICTION: Suryanagar District / Devganj Tehsil (fictional)
@@ -128,6 +156,35 @@ def _find_region(page: dict[str, Any], match_text: str) -> tuple[dict[str, float
     return ({"page": page["page"], "x": 0, "y": 0, "width": 0, "height": 0}, match_text, "UNAVAILABLE")
 
 
+def _block_fields(pages: list[dict[str, Any]]) -> list[tuple[str, str, str, dict[str, Any], dict[str, Any]]]:
+    found = []
+    for page in pages:
+        blocks = page["blocks"]
+        for index, block in enumerate(blocks):
+            lines = [" ".join(line.split()) for line in block["text"].splitlines() if line.strip()]
+            if not lines or lines[0].upper() not in BLOCK_FIELDS:
+                continue
+            label = lines[0].upper()
+            value_lines = lines[1:]
+            if value_lines and value_lines[0].upper() in BLOCK_FIELDS:
+                continue
+            if not value_lines and index + 1 < len(blocks):
+                candidate = blocks[index + 1]
+                if abs(candidate["bbox"][0] - block["bbox"][0]) < 18 and 0 <= candidate["bbox"][1] - block["bbox"][3] < 45:
+                    value_lines = [" ".join(line.split()) for line in candidate["text"].splitlines() if line.strip()]
+                    block = candidate
+            value = " ".join(value_lines).strip().rstrip(".")
+            if value:
+                predicate, field_name = BLOCK_FIELDS[label]
+                found.append((predicate, field_name, value, page, block))
+    return found
+
+
+def _region_for_block(page: dict[str, Any], block: dict[str, Any]) -> dict[str, float]:
+    x0, y0, x1, y1 = block["bbox"]
+    return {"page": page["page"], "x": round(100*x0/page["width"], 2), "y": round(100*y0/page["height"], 2), "width": round(100*(x1-x0)/page["width"], 2), "height": round(100*(y1-y0)/page["height"], 2)}
+
+
 def process_uploaded_document(title: str, doc_type: str, language: str, raw_bytes: bytes, issuer_id: str = "iss-1", mime_type: str = "application/pdf") -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     doc_id = f"doc-{uuid4().hex[:12]}"
     issuer = next((i for i in db.issuers if i["id"] == issuer_id), db.issuers[0])
@@ -135,34 +192,43 @@ def process_uploaded_document(title: str, doc_type: str, language: str, raw_byte
     pages, page_count, failures = _extract_pdf(raw_bytes) if mime_type == "application/pdf" else _extract_image(raw_bytes)
     claims: List[Dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
-    subject_hint = None
-    survey_pattern = next(pattern for predicate, _, pattern in PATTERNS if predicate == "surveyNumber")
-    for page in pages:
-        survey_match = survey_pattern.search(page["text"])
-        if survey_match:
-            subject_hint = f"Land Parcel {' '.join(survey_match.group(1).split())}"
-            break
-    for page in pages:
-        for predicate, field_name, pattern in PATTERNS:
-            for match in pattern.finditer(page["text"]):
-                value = " ".join(match.group(1).strip().split()).rstrip(".")
-                key = (predicate, value.casefold())
-                if key in seen: continue
-                seen.add(key)
-                region, snippet, mapping = _find_region(page, match.group(0))
-                claims.append({
-                    "id": f"claim-{uuid4().hex[:12]}", "subject": subject_hint or title,
-                    "predicate": predicate, "fieldName": field_name, "object": value,
-                    "normalizedValue": value.casefold(), "confidence": 0.95 if page["method"] == "PDF_TEXT" else 0.75,
-                    "confidenceTier": "HIGH" if page["method"] == "PDF_TEXT" else "MEDIUM",
-                    "sourceDocumentId": doc_id, "sourceDocumentName": title, "sourcePage": page["page"],
-                    "evidenceRegion": region, "rawSnippet": snippet, "evidenceMappingStatus": mapping,
-                    "extractionMethod": page["method"], "reviewStatus": "PENDING" if mapping != "MAPPED" else "NOT_REQUIRED",
-                    "issuerId": issuer["id"], "issuerName": issuer["name"], "issuerVerified": issuer.get("status") == "VERIFIED",
-                    "createdAt": now, "integrityStatus": "UNVERIFIED", "verificationStatus": "PENDING_REVIEW",
-                    "blockchainAnchor": {"isAnchored": False, "network": "VERITAS Demo Network (EVM Simulated)", "txHash": None, "blockNumber": None, "timestamp": None, "status": "UNANCHORED", "gasUsed": None, "contractAddress": None},
-                    "hasConflict": False, "conflictId": None,
-                })
+    structured_fields = _block_fields(pages)
+    identifiers = {predicate: value for predicate, _, value, _, _ in structured_fields}
+    subject_hint = (
+        f"Land Parcel {identifiers['parcelNumber']}" if identifiers.get("parcelNumber") else
+        f"Trade Licence {identifiers['licenceNumber']}" if identifiers.get("licenceNumber") else
+        f"Degree Certificate {identifiers['certificateNumber']}" if identifiers.get("certificateNumber") else
+        title
+    )
+    candidates = structured_fields
+    if not candidates:
+        candidates = []
+        for page in pages:
+            for predicate, field_name, pattern in PATTERNS:
+                for match in pattern.finditer(page["text"]):
+                    value = " ".join(match.group(1).strip().split()).rstrip(".")
+                    candidates.append((predicate, field_name, value, page, None))
+    for predicate, field_name, value, page, block in candidates:
+        key = (predicate, value.casefold())
+        if key in seen: continue
+        seen.add(key)
+        if block:
+            region, snippet, mapping = _region_for_block(page, block), block["text"], "MAPPED"
+        else:
+            region, snippet, mapping = _find_region(page, value)
+        claims.append({
+            "id": f"claim-{uuid4().hex[:12]}", "subject": subject_hint or title,
+            "predicate": predicate, "fieldName": field_name, "object": value,
+            "normalizedValue": value.casefold(), "confidence": 0.95 if page["method"] == "PDF_TEXT" else 0.75,
+            "confidenceTier": "HIGH" if page["method"] == "PDF_TEXT" else "MEDIUM",
+            "sourceDocumentId": doc_id, "sourceDocumentName": title, "sourcePage": page["page"],
+            "evidenceRegion": region, "rawSnippet": snippet, "evidenceMappingStatus": mapping,
+            "extractionMethod": page["method"], "reviewStatus": "PENDING" if mapping != "MAPPED" else "NOT_REQUIRED",
+            "issuerId": issuer["id"], "issuerName": issuer["name"], "issuerVerified": issuer.get("status") == "VERIFIED",
+            "createdAt": now, "integrityStatus": "UNVERIFIED", "verificationStatus": "PENDING_REVIEW",
+            "blockchainAnchor": {"isAnchored": False, "network": "VERITAS Demo Network (EVM Simulated)", "txHash": None, "blockNumber": None, "timestamp": None, "status": "UNANCHORED", "gasUsed": None, "contractAddress": None},
+            "hasConflict": False, "conflictId": None,
+        })
     text_pages = sum(bool(page["text"].strip()) for page in pages)
     ocr_pages = sum(page["method"].startswith("OCR") for page in pages)
     total_text = sum(len(page["text"]) for page in pages)

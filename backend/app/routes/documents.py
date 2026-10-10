@@ -120,6 +120,8 @@ def anchor_document(doc_id: str):
     for c in db.claims:
         if c["sourceDocumentId"] == doc_id and not c["blockchainAnchor"]["isAnchored"]:
             c["blockchainAnchor"] = anchor_info
+            c["integrityStatus"] = "VERIFIED"
+            c["verificationStatus"] = "VERIFIED"
 
     # Log audit event
     db.audit_trail.insert(0, {

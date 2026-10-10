@@ -48,19 +48,29 @@ function saveSessionDocument(value: { document: Document; claims: Claim[] }): { 
   if (typeof window === 'undefined') return value;
   try {
     const records = [...readSessionDocuments().filter(item => item.document.id !== value.document.id), value];
-    const groups = new Map<string, Claim[]>();
+    const groups = new Map<string, { claim: Claim; document: Document }[]>();
     for (const record of records) {
       for (const claim of record.claims) {
         const key = `${claim.subject.trim().toLowerCase()}::${claim.predicate}`;
-        groups.set(key, [...(groups.get(key) || []), claim]);
+        groups.set(key, [...(groups.get(key) || []), { claim, document: record.document }]);
       }
     }
     for (const record of records) {
       record.claims = record.claims.map(claim => {
         const key = `${claim.subject.trim().toLowerCase()}::${claim.predicate}`;
         const peers = groups.get(key) || [];
-        const hasConflict = new Set(peers.map(item => (item.normalizedValue || item.object).trim().toLowerCase())).size > 1;
-        return { ...claim, hasConflict, conflictId: hasConflict ? `session-${claim.subject.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${claim.predicate}` : null };
+        const normalized = (claim.normalizedValue || claim.object).trim().toLowerCase();
+        const distinctValues = new Set(peers.map(item => (item.claim.normalizedValue || item.claim.object).trim().toLowerCase()));
+        const anchoredPeers = peers.filter(item => item.document.isAnchored || item.claim.blockchainAnchor.isAnchored);
+        const anchoredValues = new Set(anchoredPeers.map(item => (item.claim.normalizedValue || item.claim.object).trim().toLowerCase()));
+        const currentIsAnchored = record.document.isAnchored || claim.blockchainAnchor.isAnchored;
+        const hasConflict = distinctValues.size > 1 && (anchoredPeers.length === 0 || (currentIsAnchored ? anchoredValues.size > 1 : !anchoredValues.has(normalized)));
+        return {
+          ...claim,
+          hasConflict,
+          conflictId: hasConflict ? `session-${claim.subject.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${claim.predicate}` : null,
+          verificationStatus: hasConflict ? 'CONFLICT' as const : currentIsAnchored ? 'VERIFIED' as const : claim.verificationStatus === 'CONFLICT' ? 'PENDING_REVIEW' as const : claim.verificationStatus,
+        };
       });
       record.document = {
         ...record.document,
@@ -177,7 +187,7 @@ export const api = {
       const anchor = demoAnchor(sessionDocument.document.hashSha256);
       const updated = {
         document: { ...sessionDocument.document, isAnchored: true, status: 'ANCHORED' as const, blockchainTx: anchor.txHash },
-        claims: sessionDocument.claims.map(claim => ({ ...claim, blockchainAnchor: anchor })),
+        claims: sessionDocument.claims.map(claim => ({ ...claim, blockchainAnchor: anchor, integrityStatus: 'VERIFIED' as const, verificationStatus: 'VERIFIED' as const })),
       };
       saveSessionDocument(updated);
       return { document: updated.document, anchor };
