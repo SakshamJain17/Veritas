@@ -6,30 +6,42 @@ import { INITIAL_DOCUMENTS, INITIAL_CLAIMS, INITIAL_CONTRADICTIONS, INITIAL_ISSU
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 const SESSION_DOCUMENT_PREFIX = 'veritas:demo-document:';
 
+function browserStores(): Storage[] {
+  if (typeof window === 'undefined') return [];
+  const stores: Storage[] = [];
+  try { stores.push(window.localStorage); } catch {}
+  try { stores.push(window.sessionStorage); } catch {}
+  return stores;
+}
+
 function readSessionDocument(id: string): { document: Document; claims: Claim[] } | null {
   if (typeof window === 'undefined') return null;
-  try {
-    const value = window.sessionStorage.getItem(`${SESSION_DOCUMENT_PREFIX}${id}`);
-    return value ? JSON.parse(value) : null;
-  } catch {
-    return null;
+  for (const store of browserStores()) {
+    try {
+      const value = store.getItem(`${SESSION_DOCUMENT_PREFIX}${id}`);
+      if (value) return JSON.parse(value);
+    } catch {}
   }
+  return null;
 }
 
 function readSessionDocuments(): { document: Document; claims: Claim[] }[] {
   if (typeof window === 'undefined') return [];
-  const values: { document: Document; claims: Claim[] }[] = [];
-  try {
-    for (let index = 0; index < window.sessionStorage.length; index += 1) {
-      const key = window.sessionStorage.key(index);
-      if (!key?.startsWith(SESSION_DOCUMENT_PREFIX)) continue;
-      const stored = window.sessionStorage.getItem(key);
-      if (stored) values.push(JSON.parse(stored));
-    }
-  } catch {
-    return [];
+  const values = new Map<string, { document: Document; claims: Claim[] }>();
+  for (const store of browserStores()) {
+    try {
+      for (let index = 0; index < store.length; index += 1) {
+        const key = store.key(index);
+        if (!key?.startsWith(SESSION_DOCUMENT_PREFIX)) continue;
+        const stored = store.getItem(key);
+        if (stored) {
+          const value = JSON.parse(stored) as { document: Document; claims: Claim[] };
+          values.set(value.document.id, value);
+        }
+      }
+    } catch {}
   }
-  return values;
+  return [...values.values()];
 }
 
 function saveSessionDocument(value: { document: Document; claims: Claim[] }): { document: Document; claims: Claim[] } {
@@ -55,7 +67,10 @@ function saveSessionDocument(value: { document: Document; claims: Claim[] }): { 
         claimsCount: record.claims.length,
         status: record.claims.some(claim => claim.hasConflict) ? 'CONFLICT_DETECTED' : record.document.status,
       };
-      window.sessionStorage.setItem(`${SESSION_DOCUMENT_PREFIX}${record.document.id}`, JSON.stringify(record));
+      const encoded = JSON.stringify(record);
+      for (const store of browserStores()) {
+        try { store.setItem(`${SESSION_DOCUMENT_PREFIX}${record.document.id}`, encoded); } catch {}
+      }
     }
     return records.find(item => item.document.id === value.document.id) || value;
   } catch {
@@ -65,19 +80,9 @@ function saveSessionDocument(value: { document: Document; claims: Claim[] }): { 
 }
 
 function readSessionClaim(id: string): { document: Document; claims: Claim[]; claim: Claim } | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    for (let index = 0; index < window.sessionStorage.length; index += 1) {
-      const key = window.sessionStorage.key(index);
-      if (!key?.startsWith(SESSION_DOCUMENT_PREFIX)) continue;
-      const stored = window.sessionStorage.getItem(key);
-      if (!stored) continue;
-      const value = JSON.parse(stored) as { document: Document; claims: Claim[] };
-      const claim = value.claims.find(item => item.id === id);
-      if (claim) return { ...value, claim };
-    }
-  } catch {
-    return null;
+  for (const value of readSessionDocuments()) {
+    const claim = value.claims.find(item => item.id === id);
+    if (claim) return { ...value, claim };
   }
   return null;
 }
