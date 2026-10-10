@@ -2,6 +2,12 @@
 > **"Don't trust the document. Verify the claim."**
 > Evidence-Backed AI Document Provenance and Cryptographic Claim Verification Infrastructure.
 
+## Hosted demo
+
+[Open VERITAS](https://veritas-alpha-ecru.vercel.app). The frontend and API are deployed together on Vercel. Vercel login is currently required; public access is pending project-owner approval to disable deployment protection.
+
+The hosted deployment uses seeded demo records. Upload and state-changing API operations are disabled there. To run the full interactive prototype locally, follow the setup instructions below.
+
 ## Prototype Scope
 
 - Extraction is deterministic demo logic based on document type/title; this prototype does not run OCR or an AI model.
