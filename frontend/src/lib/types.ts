@@ -148,7 +148,7 @@ export interface PublicVerificationPackage {
 }
 
 export interface SourceCheck {
-  status: 'NOT_RUN' | 'NOT_CONFIGURED' | 'OBSERVED' | 'UNAVAILABLE' | 'UNSUPPORTED';
+  status: 'NOT_RUN' | 'NOT_CONFIGURED' | 'OBSERVED' | 'SAVED_DEMO' | 'UNAVAILABLE' | 'UNSUPPORTED';
   provider?: string;
   sourceUrl?: string | null;
   finalUrl?: string;

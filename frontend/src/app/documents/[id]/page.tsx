@@ -90,6 +90,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const selectedClaim = claims.find(c => c.id === selectedClaimId);
+  const isSessionDemo = api.isSessionDocument(docId);
 
   return (
     <div className="document-detail-page flex-1 flex flex-col bg-[#070b14]">
@@ -121,7 +122,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         </div>
 
         {/* Action Controls */}
-        <Link href={`/documents/${document.id}/advisor`} className="rounded-lg border border-sky-700 px-3 py-1.5 text-xs font-semibold text-sky-300">Expert Review</Link>
+        <Link href={isSessionDemo ? '/documents/doc-1/advisor' : `/documents/${document.id}/advisor`} className="rounded-lg border border-sky-700 px-3 py-1.5 text-xs font-semibold text-sky-300">{isSessionDemo ? 'Sample Expert Review' : 'Expert Review'}</Link>
         <div className="flex items-center space-x-2.5">
           {!document.isAnchored ? (
             <button

@@ -17,6 +17,13 @@ class TinyFishCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "NOT_CONFIGURED")
         self.assertEqual(result["claimMatch"], "NOT_CHECKED")
 
+    def test_public_demo_uses_labelled_saved_fallback_without_key(self):
+        with patch.dict(os.environ, {"TINYFISH_API_KEY": "", "VERCEL": "1"}):
+            result = run_source_check(LAND_CLAIM)
+        self.assertEqual(result["status"], "SAVED_DEMO")
+        self.assertIn("saved", result["provider"].lower())
+        self.assertEqual(result["claimMatch"], "NOT_CHECKED")
+
     def test_public_page_observation_is_context_only(self):
         payload = {"results": [{
             "url": "https://upbhulekh.gov.in/GeoDashboard/public_report",
@@ -50,4 +57,3 @@ class TinyFishCheckTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

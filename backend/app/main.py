@@ -21,7 +21,8 @@ async def public_demo_guard(request: Request, call_next):
             f"/api/documents/doc-{i}/advisor" for i in range(1, 6)
         }
         ephemeral_upload = request.method == "POST" and path == "/api/documents/upload"
-        if not seeded_advisor and not ephemeral_upload:
+        tinyfish_observation = request.method == "POST" and path.startswith("/api/source-checks/") and path.endswith("/run")
+        if not seeded_advisor and not ephemeral_upload and not tinyfish_observation:
             return JSONResponse(status_code=403, content={"detail": "This public demo is read-only. Run VERITAS locally to analyze your own documents."})
     return await call_next(request)
 

@@ -23,6 +23,38 @@ function saveSessionDocument(value: { document: Document; claims: Claim[] }) {
   }
 }
 
+function readSessionClaim(id: string): { document: Document; claims: Claim[]; claim: Claim } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    for (let index = 0; index < window.sessionStorage.length; index += 1) {
+      const key = window.sessionStorage.key(index);
+      if (!key?.startsWith(SESSION_DOCUMENT_PREFIX)) continue;
+      const stored = window.sessionStorage.getItem(key);
+      if (!stored) continue;
+      const value = JSON.parse(stored) as { document: Document; claims: Claim[] };
+      const claim = value.claims.find(item => item.id === id);
+      if (claim) return { ...value, claim };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function demoAnchor(seed: string): BlockchainAnchor {
+  const compact = seed.replace(/[^0-9a-f]/gi, '').padEnd(64, '0').slice(0, 64);
+  return {
+    isAnchored: true,
+    network: 'VERITAS Demo Network (Browser Session)',
+    txHash: `0x${compact}`,
+    blockNumber: 18472921,
+    timestamp: new Date().toISOString(),
+    status: 'IMMUTABLE ANCHOR',
+    gasUsed: 0,
+    contractAddress: null,
+  };
+}
+
 async function safeFetch<T>(endpoint: string, options?: RequestInit, fallback?: T): Promise<T> {
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -47,6 +79,9 @@ async function safeFetch<T>(endpoint: string, options?: RequestInit, fallback?: 
 }
 
 export const api = {
+  isSessionDocument(id: string): boolean {
+    return Boolean(readSessionDocument(id));
+  },
   async latestAdvisor(id: string): Promise<AdvisorReport | null> {
     return safeFetch<AdvisorReport | null>(`/api/documents/${id}/advisor/latest`);
   },
@@ -89,6 +124,16 @@ export const api = {
   },
 
   async anchorDocument(id: string): Promise<{ document: Document; anchor: BlockchainAnchor }> {
+    const sessionDocument = readSessionDocument(id);
+    if (sessionDocument) {
+      const anchor = demoAnchor(sessionDocument.document.hashSha256);
+      const updated = {
+        document: { ...sessionDocument.document, isAnchored: true, status: 'ANCHORED' as const, blockchainTx: anchor.txHash },
+        claims: sessionDocument.claims.map(claim => ({ ...claim, blockchainAnchor: anchor })),
+      };
+      saveSessionDocument(updated);
+      return { document: updated.document, anchor };
+    }
     return safeFetch<{ document: Document; anchor: BlockchainAnchor }>(
       `/api/documents/${id}/anchor`,
       { method: 'POST' }
@@ -110,6 +155,15 @@ export const api = {
   },
 
   async getClaim(id: string): Promise<{ claim: Claim; document: Document; relatedClaims: Claim[]; conflict?: Contradiction | null }> {
+    const sessionClaim = readSessionClaim(id);
+    if (sessionClaim) {
+      return {
+        claim: sessionClaim.claim,
+        document: sessionClaim.document,
+        relatedClaims: sessionClaim.claims.filter(item => item.id !== id),
+        conflict: null,
+      };
+    }
     const fallbackClaim = INITIAL_CLAIMS.find(c => c.id === id) || INITIAL_CLAIMS[0];
     const fallbackDoc = INITIAL_DOCUMENTS.find(d => d.id === fallbackClaim.sourceDocumentId) || INITIAL_DOCUMENTS[0];
     const fallbackRelated = INITIAL_CLAIMS.filter(c => c.id !== fallbackClaim.id);
@@ -123,14 +177,26 @@ export const api = {
   },
 
   async getSourceCheck(id: string): Promise<SourceCheck> {
-    return safeFetch(`/api/source-checks/${encodeURIComponent(id)}`);
+    const sourceClaimId = readSessionClaim(id) ? 'claim-1' : id;
+    return safeFetch(`/api/source-checks/${encodeURIComponent(sourceClaimId)}`);
   },
 
   async runSourceCheck(id: string): Promise<SourceCheck> {
-    return safeFetch(`/api/source-checks/${encodeURIComponent(id)}/run`, { method: 'POST' });
+    const sourceClaimId = readSessionClaim(id) ? 'claim-1' : id;
+    return safeFetch(`/api/source-checks/${encodeURIComponent(sourceClaimId)}/run`, { method: 'POST' });
   },
 
   async anchorClaim(id: string): Promise<{ claim: Claim; anchor: BlockchainAnchor }> {
+    const sessionClaim = readSessionClaim(id);
+    if (sessionClaim) {
+      const anchor = demoAnchor(sessionClaim.document.hashSha256 + id);
+      const updatedClaim = { ...sessionClaim.claim, blockchainAnchor: anchor };
+      saveSessionDocument({
+        document: sessionClaim.document,
+        claims: sessionClaim.claims.map(claim => claim.id === id ? updatedClaim : claim),
+      });
+      return { claim: updatedClaim, anchor };
+    }
     return safeFetch<{ claim: Claim; anchor: BlockchainAnchor }>(
       `/api/claims/${id}/anchor`,
       { method: 'POST' }
@@ -169,8 +235,9 @@ export const api = {
 
   // Public Verification
   async verifyClaimPublic(claimId: string): Promise<PublicVerificationPackage> {
-    const claim = INITIAL_CLAIMS.find(c => c.id === claimId) || INITIAL_CLAIMS[0];
-    const doc = INITIAL_DOCUMENTS.find(d => d.id === claim.sourceDocumentId) || INITIAL_DOCUMENTS[0];
+    const sessionClaim = readSessionClaim(claimId);
+    const claim = sessionClaim?.claim || INITIAL_CLAIMS.find(c => c.id === claimId) || INITIAL_CLAIMS[0];
+    const doc = sessionClaim?.document || INITIAL_DOCUMENTS.find(d => d.id === claim.sourceDocumentId) || INITIAL_DOCUMENTS[0];
     const issuer = INITIAL_ISSUERS.find(i => i.id === claim.issuerId) || INITIAL_ISSUERS[0];
 
     const fallback: PublicVerificationPackage = {
@@ -213,6 +280,7 @@ export const api = {
       timestamp: new Date().toISOString()
     };
 
+    if (sessionClaim) return fallback;
     return safeFetch<PublicVerificationPackage>(`/api/verify/${claimId}`, {}, fallback);
   },
 

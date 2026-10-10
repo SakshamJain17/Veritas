@@ -40,10 +40,10 @@ export default function PublicSourceCheck({ claimId }: { claimId: string }) {
           {check.pageTitle || check.sourceLabel || check.sourceUrl}
         </a>
       )}
-      {check?.status === 'OBSERVED' && (
+      {(check?.status === 'OBSERVED' || check?.status === 'SAVED_DEMO') && (
         <div className="rounded-lg border border-slate-700 bg-slate-950 p-3 space-y-2 text-xs">
           <p className="text-slate-300">{check.excerpt}</p>
-          <p className="text-slate-500">Observed {check.observedAt} · Content SHA-256 {check.contentSha256}</p>
+          <p className="text-slate-500">{check.status === 'OBSERVED' ? `Observed ${check.observedAt}` : 'Saved fallback · live API key not configured'} · Content SHA-256 {check.contentSha256}</p>
         </div>
       )}
       <div className="grid grid-cols-2 gap-2 text-xs">
@@ -53,10 +53,9 @@ export default function PublicSourceCheck({ claimId }: { claimId: string }) {
       <p className="text-xs text-amber-300">This public dashboard supplies jurisdiction context only. It does not prove who owns the fictional demo parcel.</p>
       {check?.status !== 'UNSUPPORTED' && (
         <button onClick={run} disabled={busy} className="rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
-          {busy ? 'Checking public source…' : 'Run live TinyFish check'}
+          {busy ? 'Checking public source…' : check?.status === 'SAVED_DEMO' ? 'Retry live TinyFish check' : 'Run TinyFish check'}
         </button>
       )}
     </section>
   );
 }
-

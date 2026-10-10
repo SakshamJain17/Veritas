@@ -46,6 +46,17 @@ def run_source_check(claim):
     }
     api_key = os.environ.get("TINYFISH_API_KEY", "").strip()
     if not api_key:
+        if os.environ.get("VERCEL") == "1":
+            excerpt = "Saved demonstration: the configured Uttar Pradesh Bhulekh page is a public land-record reporting source. A live TinyFish Fetch request requires TINYFISH_API_KEY in the Vercel project."
+            return {
+                **base,
+                "status": "SAVED_DEMO",
+                "provider": "TinyFish Fetch (saved fallback)",
+                "pageTitle": profile["label"],
+                "excerpt": excerpt,
+                "contentSha256": hashlib.sha256(excerpt.encode("utf-8")).hexdigest(),
+                "message": "Saved TinyFish demonstration shown because the production API key is not configured.",
+            }
         return {**base, "status": "NOT_CONFIGURED", "message": "Set TINYFISH_API_KEY on the backend to run a live public-source check."}
 
     body = json.dumps({
@@ -89,4 +100,3 @@ def run_source_check(claim):
         }
     except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
         return {**base, "status": "UNAVAILABLE", "message": f"TinyFish request failed ({type(exc).__name__})."}
-
