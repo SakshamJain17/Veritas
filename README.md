@@ -4,7 +4,7 @@
 
 ## Hosted demo
 
-[Open VERITAS](https://veritas-alpha-ecru.vercel.app). The frontend and API are deployed together on Vercel. Vercel login is currently required; public access is pending project-owner approval to disable deployment protection.
+[Open VERITAS](https://veritas-alpha-ecru.vercel.app). The frontend and API are deployed together on Vercel and are publicly accessible.
 
 The hosted deployment uses seeded demo records. Upload and state-changing API operations are disabled there. To run the full interactive prototype locally, follow the setup instructions below.
 
