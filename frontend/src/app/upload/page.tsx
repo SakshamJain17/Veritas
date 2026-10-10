@@ -373,7 +373,7 @@ export default function UploadPage() {
                 <span>Contradiction Warning: Owner Mismatch Found</span>
               </div>
               <p className="text-[11px] text-slate-300">
-                VERITAS identified that Survey Parcel 184/2 has conflicting registered ownership claims across records (&ldquo;Rahul Sharma&rdquo; vs &ldquo;Rohan Sharma&rdquo;). This has been routed to Human-in-the-Loop review.
+                VERITAS identified conflicting recorded-holder values for the same parcel across uploaded records. The extracted values and their source evidence have been routed to human review.
               </p>
             </div>
           )}
